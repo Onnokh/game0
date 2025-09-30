@@ -12,6 +12,10 @@ export class Enemy extends AIActor {
   private moveSpeed = 100;
   private idleSpeed = 50;
   
+  // Health
+  private life = 100;
+  private maxLife = 100;
+  
   // State Machine
   private currentState: IEnemyState;
   private states: Map<EnemyStateType, IEnemyState>;
@@ -21,6 +25,7 @@ export class Enemy extends AIActor {
   private walkAnimation!: ex.Animation;
   private runAnimation!: ex.Animation;
   private currentAnimation!: ex.Animation;
+  private healthBarCanvas!: ex.Canvas;
   
   // Public properties for state access
   public readonly detectionRange = 200;
@@ -78,7 +83,20 @@ export class Enemy extends AIActor {
   setAnimation(isRunning: boolean): void {
     const targetAnimation = isRunning ? this.runAnimation : this.walkAnimation;
     if (this.currentAnimation !== targetAnimation) {
-      this.graphics.use(targetAnimation);
+      // Update the graphics group with new animation
+      const group = new ex.GraphicsGroup({
+        members: [
+          {
+            graphic: targetAnimation,
+            offset: ex.vec(0, 0)
+          },
+          {
+            graphic: this.healthBarCanvas,
+            offset: ex.vec(0, -20) // Position above sprite (negative Y = up)
+          }
+        ]
+      });
+      this.graphics.use(group);
       this.currentAnimation = targetAnimation;
     }
   }
@@ -116,6 +134,31 @@ export class Enemy extends AIActor {
     this.currentAnimation = this.walkAnimation;
     this.graphics.use(this.walkAnimation);
     
+    // Create healthbar canvas
+    this.healthBarCanvas = new ex.Canvas({
+      width: 64,
+      height: 8,
+      draw: (ctx) => this.drawHealthBarToCanvas(ctx)
+    });
+    
+    // Add healthbar graphic
+    this.graphics.add(this.healthBarCanvas);
+    
+    // Create a graphics group to show both animation and healthbar
+    const group = new ex.GraphicsGroup({
+      members: [
+        {
+          graphic: this.walkAnimation,
+          offset: ex.vec(0, 0)
+        },
+        {
+          graphic: this.healthBarCanvas,
+          offset: ex.vec(0, -20) // Position above sprite (negative Y = up)
+        }
+      ]
+    });
+    this.graphics.use(group);
+    
     // Enter initial state
     this.currentState.enter(this);
   }
@@ -129,6 +172,9 @@ export class Enemy extends AIActor {
     
     // Update sprite direction based on velocity
     this.updateSpriteDirection();
+    
+    // Flag healthbar for redraw
+    this.healthBarCanvas.flagDirty();
   }
 
   private updateSpriteDirection(): void {
@@ -153,6 +199,25 @@ export class Enemy extends AIActor {
 
   getMoveSpeed(): number {
     return this.moveSpeed;
+  }
+
+  getLife(): number {
+    return this.life;
+  }
+
+  getMaxLife(): number {
+    return this.maxLife;
+  }
+
+  takeDamage(damage: number): void {
+    this.life = Math.max(0, this.life - damage);
+    if (this.life <= 0) {
+      this.kill();
+    }
+  }
+
+  heal(amount: number): void {
+    this.life = Math.min(this.maxLife, this.life + amount);
   }
 
   override onPostUpdate(engine: ex.Engine, delta: number): void {
@@ -205,6 +270,41 @@ export class Enemy extends AIActor {
       this.currentStateType,
       this.pos.add(ex.vec(-30, -30))
     );
+  }
+
+  private drawHealthBarToCanvas(ctx: CanvasRenderingContext2D): void {
+    const barWidth = 64;
+    const barHeight = 8;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, barWidth, barHeight);
+    
+    // Draw background (dark gray)
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(0, 0, barWidth, barHeight);
+    
+    // Calculate health percentage and width
+    const healthPercentage = this.life / this.maxLife;
+    const healthWidth = barWidth * healthPercentage;
+    
+    // Color interpolation: red at low health, green at high health
+    if (healthPercentage > 0.5) {
+      ctx.fillStyle = '#00FF00'; // Green
+    } else if (healthPercentage > 0.25) {
+      ctx.fillStyle = '#FFFF00'; // Yellow
+    } else {
+      ctx.fillStyle = '#FF0000'; // Red
+    }
+    
+    // Draw health bar
+    if (healthWidth > 0) {
+      ctx.fillRect(0, 0, healthWidth, barHeight);
+    }
+    
+    // Draw border
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, barWidth, barHeight);
   }
 }
 
