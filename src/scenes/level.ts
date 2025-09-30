@@ -4,6 +4,7 @@ import { OakTree } from "../entities/oak-tree";
 import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
+import { debugMode } from "../main";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -175,6 +176,9 @@ export class MyLevel extends ex.Scene {
 
     override onPostDraw(ctx: ex.ExcaliburGraphicsContext, elapsedMs: number): void {
         // Called after Excalibur draws to the screen
+        
+        // Only draw debug grid when debug mode is enabled
+        if (!debugMode) return;
         
         // Draw debug grid
         const tileSize = 16;

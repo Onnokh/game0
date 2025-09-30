@@ -7,9 +7,9 @@ export class Player extends ex.Actor {
   private isMoving = false;
   private isSprinting = false;
   private isFacingRight = true;
-  private idleAnimation: ex.Animation;
-  private walkAnimation: ex.Animation;
-  private sprintAnimation: ex.Animation;
+  private idleAnimation!: ex.Animation;
+  private walkAnimation!: ex.Animation;
+  private sprintAnimation!: ex.Animation;
 
   constructor() {
     super({

@@ -1,9 +1,10 @@
 import * as ex from 'excalibur';
 import { Player } from '../entities/player';
+import { debugMode } from '../main';
 
 export class GameUI extends ex.ScreenElement {
-  private titleLabel: ex.Label;
-  private velocityLabel: ex.Label;
+  private titleLabel!: ex.Label;
+  private velocityLabel!: ex.Label;
   private player: Player | null = null;
 
   constructor() {
@@ -48,6 +49,12 @@ export class GameUI extends ex.ScreenElement {
 
   updateVelocityDisplay(): void {
     if (!this.player || !this.velocityLabel) return;
+
+    // Only show velocity info in debug mode
+    if (!debugMode) {
+      this.velocityLabel.text = '';
+      return;
+    }
 
     const velocity = this.player.vel;
     const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
