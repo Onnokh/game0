@@ -116,7 +116,7 @@ export class Enemy extends ex.Actor {
     const startGrid = worldToGrid(this.pos, this.tileSize);
     const endGrid = worldToGrid(this.player.pos, this.tileSize);
     
-    this.currentPath = findPath(startGrid, endGrid, engine, this.tileSize);
+    this.currentPath = findPath(startGrid, endGrid, engine, this.tileSize, this);
     this.pathIndex = 0;
   }
 

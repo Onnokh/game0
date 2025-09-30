@@ -144,6 +144,10 @@ export class MyLevel extends ex.Scene {
             new OakTree(544, 488),   // Right-center (480->488)
             new OakTree(96, 520),    // Far left (512->520)
             new OakTree(752, 552),   // Far right (544->552)
+
+
+            new OakTree(360, 904),   // Far right (544->552)
+
         ];
         
         // Add all trees to the scene

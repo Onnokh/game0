@@ -1,51 +1,70 @@
 import * as ex from 'excalibur';
+import { ExcaliburAStar, type GraphTileMap, type aStarNode } from '@excaliburjs/plugin-pathfinding';
 import { gridToWorld } from './grid-utils';
 
-interface PathNode {
-  pos: ex.Vector;
-  g: number;
-  h: number;
-  f: number;
-  parent?: ex.Vector;
-}
-
 /**
- * Calculate Manhattan distance heuristic for A* pathfinding
+ * Create a dynamic collision grid for pathfinding
  */
-function heuristic(a: ex.Vector, b: ex.Vector): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
-
-/**
- * Check if a grid position is walkable (no collisions)
- */
-function isWalkable(gridPos: ex.Vector, engine: ex.Engine, tileSize: number): boolean {
-  // Convert grid position to world position
-  const worldPos = gridToWorld(gridPos, tileSize);
+function createCollisionGrid(
+  engine: ex.Engine,
+  tileSize: number,
+  gridWidth: number,
+  gridHeight: number,
+  offsetX: number,
+  offsetY: number,
+  excludeActor?: ex.Actor
+): GraphTileMap {
+  const tiles = [];
   
-  // Check for collisions in this grid cell
-  const hit = engine.currentScene.physics.rayCast(
-    new ex.Ray(worldPos, ex.Vector.Right),
-    { maxDistance: 1 }
+  // Get all actors with colliders that should block pathfinding
+  // Include Fixed colliders (trees), exclude the pathfinding actor itself
+  const actors = engine.currentScene.actors.filter(
+    actor => actor.collider && 
+             actor.collider.bounds && 
+             actor !== excludeActor
   );
   
-  // If no collision detected, it's walkable
-  return hit.length === 0;
-}
-
-/**
- * Reconstruct the path from the final node back to the start
- */
-function reconstructPath(current: PathNode, tileSize: number): ex.Vector[] {
-  const path: ex.Vector[] = [];
-  let node: PathNode | null = current;
-  
-  while (node) {
-    path.unshift(gridToWorld(node.pos, tileSize));
-    node = node.parent ? { pos: node.parent } as PathNode : null;
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      // Convert grid position to world position
+      const worldPos = gridToWorld(ex.vec(x + offsetX, y + offsetY), tileSize);
+      
+      // Check if any actor's collider overlaps this grid cell
+      // Add padding to account for the pathfinding entity's size
+      const padding = tileSize; // Account for entity radius
+      let hasCollision = false;
+      
+      for (const actor of actors) {
+        // Only consider Fixed collision type (trees, walls, etc) as obstacles
+        // Skip Active collision types (player, other enemies)
+        const collisionType = (actor as any).body?.collisionType;
+        if (collisionType === ex.CollisionType.Fixed) {
+          // Check if this position is within padding distance of the obstacle
+          if (actor.collider.bounds) {
+            // Expand bounds by padding amount
+            const expandedBounds = actor.collider.bounds.expand(padding);
+            if (expandedBounds.contains(worldPos)) {
+              hasCollision = true;
+              break;
+            }
+          }
+        }
+      }
+      
+      tiles.push({
+        index: y * gridWidth + x,
+        coordinates: { x, y },
+        collider: hasCollision
+      });
+    }
   }
   
-  return path.slice(1); // Remove the starting position
+  return {
+    name: 'collision-grid',
+    tiles,
+    rows: gridHeight,
+    cols: gridWidth
+  };
 }
 
 /**
@@ -54,72 +73,45 @@ function reconstructPath(current: PathNode, tileSize: number): ex.Vector[] {
  * @param end Target grid position
  * @param engine Excalibur engine instance
  * @param tileSize Size of each grid tile
+ * @param excludeActor Optional actor to exclude from collision detection (usually the pathfinding entity itself)
  * @returns Array of world positions representing the path, or empty array if no path found
  */
 export function findPath(
   start: ex.Vector,
   end: ex.Vector,
   engine: ex.Engine,
-  tileSize: number
+  tileSize: number,
+  excludeActor?: ex.Actor
 ): ex.Vector[] {
-  // Simple A* pathfinding
-  const openSet: PathNode[] = [];
-  const closedSet = new Set<string>();
+  // Create a grid that covers the area we need to pathfind
+  // Add padding to ensure we have enough space
+  const minX = Math.min(start.x, end.x) - 10;
+  const maxX = Math.max(start.x, end.x) + 10;
+  const minY = Math.min(start.y, end.y) - 10;
+  const maxY = Math.max(start.y, end.y) + 10;
   
-  openSet.push({ pos: start, g: 0, h: heuristic(start, end), f: heuristic(start, end) });
+  const gridWidth = maxX - minX + 1;
+  const gridHeight = maxY - minY + 1;
   
-  while (openSet.length > 0) {
-    // Find node with lowest f score
-    let currentIndex = 0;
-    for (let i = 1; i < openSet.length; i++) {
-      if (openSet[i].f < openSet[currentIndex].f) {
-        currentIndex = i;
-      }
-    }
-    
-    const current = openSet.splice(currentIndex, 1)[0];
-    const currentKey = `${current.pos.x},${current.pos.y}`;
-    closedSet.add(currentKey);
-    
-    // Check if we reached the goal
-    if (current.pos.x === end.x && current.pos.y === end.y) {
-      return reconstructPath(current, tileSize);
-    }
-    
-    // Check all 8 neighbors (including diagonals)
-    const neighbors = [
-      ex.vec(-1, -1), ex.vec(0, -1), ex.vec(1, -1),
-      ex.vec(-1, 0),                 ex.vec(1, 0),
-      ex.vec(-1, 1),  ex.vec(0, 1),  ex.vec(1, 1)
-    ];
-    
-    for (const neighbor of neighbors) {
-      const neighborPos = current.pos.add(neighbor);
-      const neighborKey = `${neighborPos.x},${neighborPos.y}`;
-      
-      if (closedSet.has(neighborKey)) continue;
-      if (!isWalkable(neighborPos, engine, tileSize)) continue;
-      
-      const tentativeG = current.g + (neighbor.x !== 0 && neighbor.y !== 0 ? 1.414 : 1);
-      
-      // Check if this path to neighbor is better
-      const existing = openSet.find(n => n.pos.x === neighborPos.x && n.pos.y === neighborPos.y);
-      if (!existing) {
-        const h = heuristic(neighborPos, end);
-        openSet.push({
-          pos: neighborPos,
-          g: tentativeG,
-          h: h,
-          f: tentativeG + h,
-          parent: current.pos
-        });
-      } else if (tentativeG < existing.g) {
-        existing.g = tentativeG;
-        existing.f = tentativeG + existing.h;
-        existing.parent = current.pos;
-      }
-    }
-  }
+  // Create the collision grid
+  const gridTileMap = createCollisionGrid(engine, tileSize, gridWidth, gridHeight, minX, minY, excludeActor);
   
-  return []; // No path found
+  // Create A* instance
+  const astar = new ExcaliburAStar(gridTileMap);
+  
+  // Adjust start/end positions to be relative to our grid
+  const adjustedStart = ex.vec(start.x - minX, start.y - minY);
+  const adjustedEnd = ex.vec(end.x - minX, end.y - minY);
+  
+  // Get nodes
+  const startNode = astar.getNodeByCoord(adjustedStart.x, adjustedStart.y);
+  const endNode = astar.getNodeByCoord(adjustedEnd.x, adjustedEnd.y);
+  
+  // Find path (with diagonal movement)
+  const pathNodes: aStarNode[] = astar.astar(startNode, endNode, true);
+  
+  // Convert back to world positions
+  return pathNodes.map(node => 
+    gridToWorld(ex.vec(node.x + minX, node.y + minY), tileSize)
+  );
 }
