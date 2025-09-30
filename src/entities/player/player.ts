@@ -1,21 +1,23 @@
 import * as ex from 'excalibur';
-import {SpriteFactory} from '../sprites/sprite-factory';
-import {GameUI} from '../ui/game-ui';
-import {Bullet} from './bullet';
-import {Weapon} from './weapon';
-import { playerGroup } from '../lib/collision-groups';
+import {SpriteFactory} from '../../sprites/sprite-factory';
+import {GameUI} from '../../ui/game-ui';
+import {Bullet} from '../bullet';
+import {Weapon} from '../weapon';
+import { playerGroup } from '../../lib/collision-groups';
+import { IPlayerState, PlayerStateType } from './states/player-state';
+import { IdleState } from './states/idle-state';
+import { MovingState } from './states/moving-state';
+import { DodgeRollingState } from './states/dodge-rolling-state';
 
 export class Player extends ex.Actor {
     private walkSpeed = 100; // pixels per second for walking
-    private sprintSpeed = 200; // pixels per second for sprinting
-    private isMoving = false;
-    private isSprinting = false;
+    private sprintSpeed = 150; // pixels per second for sprinting
     private isFacingRight = true;
     private idleAnimation!: ex.Animation;
     private walkAnimation!: ex.Animation;
     private sprintAnimation!: ex.Animation;
     private jumpAnimation!: ex.Animation;
-    private weaponActor?: ex.Actor;
+    private dodgeRollAnimation!: ex.Animation;
     private gameUI?: GameUI;
     
     // Shooting mechanics
@@ -25,15 +27,23 @@ export class Player extends ex.Actor {
     private weaponVisual?: ex.Actor;
     private isMousePressed = false;
     private mouseTargetPos?: ex.Vector;
+    
+    // Dodge roll properties
     private isDodgeRolling = false;
-    private dodgeRollSpeed = 200; // pixels per second during dodge roll
-    private dodgeRollDuration = 1200; // milliseconds - longer to see animation
-    private dodgeRollCooldown = 2000; // milliseconds
+    private dodgeRollSpeed = 300; // pixels per second during dodge roll
+    private dodgeRollDuration = 450; // milliseconds - longer to see animation
+    private dodgeRollCooldown = 3000; // milliseconds
     private lastDodgeRollTime = 0;
     private dodgeRollDirection = ex.vec(0, 0);
+    private cooldownBarCanvas!: ex.Canvas;
 
     // Jump properties
     private isJumping = false;
+
+    // State Machine
+    private currentState: IPlayerState;
+    private states: Map<PlayerStateType, IPlayerState>;
+    private currentStateType: PlayerStateType = PlayerStateType.Idle;
 
     constructor() {
         super({
@@ -44,6 +54,15 @@ export class Player extends ex.Actor {
             collisionType: ex.CollisionType.Active, // Enable collision for the player
             collisionGroup: playerGroup,
         });
+
+        // Initialize states
+        this.states = new Map<PlayerStateType, IPlayerState>();
+        this.states.set(PlayerStateType.Idle, new IdleState());
+        this.states.set(PlayerStateType.Moving, new MovingState());
+        this.states.set(PlayerStateType.DodgeRolling, new DodgeRollingState());
+
+        // Set initial state
+        this.currentState = this.states.get(PlayerStateType.Idle)!;
     }
 
     override onInitialize(): void {
@@ -55,29 +74,38 @@ export class Player extends ex.Actor {
         this.walkAnimation = SpriteFactory.createPlayerWalkAnimation();
         this.sprintAnimation = SpriteFactory.createPlayerSprintAnimation();
         this.jumpAnimation = SpriteFactory.createPlayerJumpAnimation();
+        this.dodgeRollAnimation = SpriteFactory.createPlayerDodgeRollAnimation();
         this.on('precollision', this.onPreCollision.bind(this));
 
         // Start with idle animation
         this.graphics.use(this.idleAnimation);
         
+        // Create cooldown bar canvas
+        this.cooldownBarCanvas = new ex.Canvas({
+            width: 34, // 32px bar + 2px for border
+            height: 6,  // 4px bar + 2px for border
+            cache: true,
+            draw: (ctx) => this.drawCooldownBarToCanvas(ctx)
+        });
+        
+        // Set up cooldown indicator drawing
+        this.graphics.onPostDraw = this.drawCooldownIndicator.bind(this);
+        
         // Set up mouse input for shooting
         this.scene?.engine.input.pointers.primary.on('down', this.onPointerDown.bind(this));
         this.scene?.engine.input.pointers.primary.on('up', this.onPointerUp.bind(this));
         this.scene?.engine.input.pointers.primary.on('move', this.onPointerMove.bind(this));
+
+        // Enter initial state
+        this.currentState.enter(this);
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {
         // Update z-index based on y-position for proper depth sorting
         this.z = this.pos.y;
 
-        // Handle keyboard input
-        const input = engine.input.keyboard;
         const currentTime = Date.now();
-
-        // Handle dodge roll input (spacebar)
-        if (input.wasPressed(ex.Keys.Space) && !this.isDodgeRolling) {
-            this.tryDodgeRoll(currentTime);
-        }
+        const input = engine.input.keyboard;
 
         // Handle jump input (J key)
         if (input.wasPressed(ex.Keys.KeyJ)) {
@@ -85,81 +113,14 @@ export class Player extends ex.Actor {
             console.log('Jump toggled:', this.isJumping);
         }
 
-        // Update dodge roll state
-        if (this.isDodgeRolling) {
-            if (currentTime - this.lastDodgeRollTime >= this.dodgeRollDuration) {
-                this.isDodgeRolling = false;
-            }
-        }
-
-        // Reset velocity each frame
-        this.vel = ex.vec(0, 0);
-        this.isMoving = false;
-
-        // If dodge rolling, use dodge roll movement
-        if (this.isDodgeRolling) {
-            this.vel = this.dodgeRollDirection.scale(this.dodgeRollSpeed);
-            this.isMoving = true;
-            return; // Skip normal movement input during dodge roll
-        }
-
-        let moveX = 0;
-        let moveY = 0;
-
-        // Check for sprint (left shift)
-        this.isSprinting = input.isHeld(ex.Keys.ShiftLeft);
-
-        // Check for reload (R key)
+        // Handle reload (R key)
         if (input.wasPressed(ex.Keys.KeyR) && this.equippedWeapon && this.currentAmmo < this.equippedWeapon.magazine_size) {
             this.reload();
         }
 
-        if (input.isHeld(ex.Keys.ArrowLeft) || input.isHeld(ex.Keys.KeyA)) {
-            moveX = -1;
-            this.isMoving = true;
-            this.isFacingRight = true;
-        }
-        if (input.isHeld(ex.Keys.ArrowRight) || input.isHeld(ex.Keys.KeyD)) {
-            moveX = 1;
-            this.isMoving = true;
-            this.isFacingRight = false;
-        }
-        if (input.isHeld(ex.Keys.ArrowUp) || input.isHeld(ex.Keys.KeyW)) {
-            moveY = -1;
-            this.isMoving = true;
-        }
-        if (input.isHeld(ex.Keys.ArrowDown) || input.isHeld(ex.Keys.KeyS)) {
-            moveY = 1;
-            this.isMoving = true;
-        }
-
-        // Normalize diagonal movement to maintain consistent speed
-        if (moveX !== 0 || moveY !== 0) {
-            const normalizedMovement = ex.vec(moveX, moveY).normalize();
-            const currentSpeed = this.isSprinting ? this.sprintSpeed : this.walkSpeed;
-            this.vel = normalizedMovement.scale(currentSpeed);
-        }
-
-        // Update animation based on movement state
-        let targetAnimation;
-        if (this.isDodgeRolling || this.isJumping) {
-            // Use jump animation for dodge roll or explicit jump toggle
-            targetAnimation = this.jumpAnimation;
-        } else if (this.isMoving) {
-            if (this.isSprinting) {
-                targetAnimation = this.sprintAnimation;
-            } else {
-                targetAnimation = this.walkAnimation;
-            }
-        } else {
-            targetAnimation = this.idleAnimation;
-        }
-
-        // Update animation if needed
-        if (this.graphics.current !== targetAnimation) {
-            this.graphics.use(targetAnimation);
-        }
-
+        // Update current state
+        this.currentState.update(this, engine, delta);
+        
         // Apply horizontal flipping based on facing direction
         this.graphics.flipHorizontal = this.isFacingRight;
         
@@ -177,14 +138,116 @@ export class Player extends ex.Actor {
         if (this.isMousePressed && this.mouseTargetPos && this.equippedWeapon && this.currentAmmo > 0) {
             this.shoot(this.mouseTargetPos);
         }
-
-        // Update UI with dodge roll status
-        if (this.gameUI) {
-            const cooldownRemaining = Math.max(0, this.dodgeRollCooldown - (currentTime - this.lastDodgeRollTime));
-            this.gameUI.updateDodgeStatus(this.isDodgeRolling, cooldownRemaining, this.isJumping);
+        
+        // Flag cooldown bar for redraw if cooldown is active but dodge roll is finished
+        const cooldownRemaining = Math.max(0, this.dodgeRollCooldown - (currentTime - this.lastDodgeRollTime));
+        if (cooldownRemaining > 0 && !this.isDodgeRolling) {
+            this.cooldownBarCanvas.flagDirty();
         }
     }
 
+    // State Machine Methods
+    changeState(newStateType: PlayerStateType): void {
+        if (this.currentStateType === newStateType) return;
+
+        this.currentState.exit(this);
+        this.currentStateType = newStateType;
+        this.currentState = this.states.get(newStateType)!;
+        this.currentState.enter(this);
+    }
+
+    getCurrentStateType(): PlayerStateType {
+        return this.currentStateType;
+    }
+
+    // Public methods for states to access
+
+    setAnimation(animationName: string): void {
+        let targetAnimation;
+        switch (animationName) {
+            case 'idle':
+                targetAnimation = this.idleAnimation;
+                break;
+            case 'walk':
+                targetAnimation = this.walkAnimation;
+                break;
+            case 'sprint':
+                targetAnimation = this.sprintAnimation;
+                break;
+            case 'jump':
+                targetAnimation = this.jumpAnimation;
+                break;
+            case 'dodgeroll':
+                targetAnimation = this.dodgeRollAnimation;
+                break;
+            default:
+                return;
+        }
+
+        if (this.graphics.current !== targetAnimation) {
+            this.graphics.use(targetAnimation);
+        }
+    }
+
+    setFacingRight(facingRight: boolean): void {
+        this.isFacingRight = facingRight;
+    }
+
+    setSprinting(sprinting: boolean): void {
+        this.isSprinting = sprinting;
+    }
+
+    getWalkSpeed(): number {
+        return this.walkSpeed;
+    }
+
+    getSprintSpeed(): number {
+        return this.sprintSpeed;
+    }
+
+    tryDodgeRoll(): boolean {
+        const currentTime = Date.now();
+        
+        // Check if dodge roll is on cooldown
+        if (currentTime - this.lastDodgeRollTime < this.dodgeRollCooldown) {
+            return false; // Still on cooldown
+        }
+
+        // Dodge roll is available
+        this.isDodgeRolling = true;
+        this.lastDodgeRollTime = currentTime;
+        return true;
+    }
+
+    setIsDodgeRolling(isDodgeRolling: boolean): void {
+        this.isDodgeRolling = isDodgeRolling;
+    }
+
+    setDodgeDirection(direction: ex.Vector): void {
+        this.dodgeRollDirection = direction;
+    }
+
+    getDodgeDirection(): ex.Vector {
+        return this.dodgeRollDirection;
+    }
+
+    getDodgeRollSpeed(): number {
+        return this.dodgeRollSpeed;
+    }
+
+    getDodgeRollDuration(): number {
+        return this.dodgeRollDuration;
+    }
+
+    getLastDodgeRollTime(): number {
+        return this.lastDodgeRollTime;
+    }
+
+    getDodgeRollAnimation(): ex.Animation {
+        return this.dodgeRollAnimation;
+    }
+
+    // Collision handling
     onPreCollision(event: ex.PreCollisionEvent): void {
         const otherActor = event.other.owner as ex.Actor;
         if (otherActor?.tags?.has('pickup')) {
@@ -222,7 +285,7 @@ export class Player extends ex.Actor {
                 
                 // Update UI if available
                 if (this.gameUI) {
-                    this.gameUI.updateWeaponStatus(true);
+                    this.gameUI.updateWeaponStatus(true, otherActor.name);
                     this.gameUI.updateAmmoCount(this.currentAmmo, otherActor.magazine_size);
                 }
             }
@@ -233,6 +296,7 @@ export class Player extends ex.Actor {
         this.gameUI = gameUI;
     }
 
+    // Shooting methods
     private onPointerDown(event: ex.PointerEvent): void {
         // Only start shooting if we have a weapon equipped and ammo
         if (this.equippedWeapon && this.currentAmmo > 0) {
@@ -330,46 +394,56 @@ export class Player extends ex.Actor {
         console.log(`Reloaded! Ammo: ${this.currentAmmo}/${this.equippedWeapon.magazine_size}`);
     }
 
-    private tryDodgeRoll(currentTime: number): void {
-        // Check if dodge roll is on cooldown
-        if (currentTime - this.lastDodgeRollTime < this.dodgeRollCooldown) {
-            return; // Still on cooldown
-        }
-
-        // Determine dodge roll direction based on current input or facing direction
-        const input = this.scene?.engine.input.keyboard;
-        let dodgeX = 0;
-        let dodgeY = 0;
-
-        if (input) {
-            // Check for movement input to determine dodge direction
-            if (input.isHeld(ex.Keys.ArrowLeft) || input.isHeld(ex.Keys.KeyA)) {
-                dodgeX = -1;
-            }
-            if (input.isHeld(ex.Keys.ArrowRight) || input.isHeld(ex.Keys.KeyD)) {
-                dodgeX = 1;
-            }
-            if (input.isHeld(ex.Keys.ArrowUp) || input.isHeld(ex.Keys.KeyW)) {
-                dodgeY = -1;
-            }
-            if (input.isHeld(ex.Keys.ArrowDown) || input.isHeld(ex.Keys.KeyS)) {
-                dodgeY = 1;
-            }
-        }
-
-        // If no input direction, dodge in the facing direction
-        if (dodgeX === 0 && dodgeY === 0) {
-            dodgeX = this.isFacingRight ? -1 : 1; // Dodge in facing direction
-        }
-
-        // Normalize the dodge direction
-        this.dodgeRollDirection = ex.vec(dodgeX, dodgeY).normalize();
-
-        // Start dodge roll
-        this.isDodgeRolling = true;
-        this.lastDodgeRollTime = currentTime;
-
-        console.log(`Dodge roll started in direction: (${this.dodgeRollDirection.x.toFixed(2)}, ${this.dodgeRollDirection.y.toFixed(2)})`);
+    // Cooldown bar drawing
+    private drawCooldownIndicator(ctx: ex.ExcaliburGraphicsContext): void {
+        const currentTime = Date.now();
+        const cooldownRemaining = Math.max(0, this.dodgeRollCooldown - (currentTime - this.lastDodgeRollTime));
+        
+        // Only draw if there's a cooldown active AND the dodge roll is finished
+        if (cooldownRemaining <= 0 || this.isDodgeRolling) return;
+        
+        // Draw the canvas below the player using the graphic's draw method
+        ctx.save();
+        ctx.translate(0, 20); // Position below player
+        this.cooldownBarCanvas.draw(ctx, -17, 0); // Draw centered
+        ctx.restore();
     }
 
+    private drawCooldownBarToCanvas(ctx: CanvasRenderingContext2D): void {
+        // Calculate progress from when dodge finishes to when cooldown ends
+        // Dodge duration: 0-1200ms (not shown)
+        // Cooldown shown: 1200-2000ms (800ms window)
+        const cooldownAfterDodge = this.dodgeRollCooldown - this.dodgeRollDuration; // 800ms
+        const progressStart = this.dodgeRollDuration; // 1200ms
+        const timeElapsed = Date.now() - this.lastDodgeRollTime;
+        const cooldownProgress = Math.max(0, Math.min(1, (timeElapsed - progressStart) / cooldownAfterDodge));
+        
+        const barWidth = 32;
+        const barHeight = 4;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, 34, 6);
+        
+        // Draw background (dark gray)
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(1, 1, barWidth, barHeight);
+        
+        // Calculate filled width (fills as cooldown progresses)
+        const filledWidth = barWidth * cooldownProgress;
+        
+        // Light blue progress bar
+        ctx.fillStyle = '#64C8FF';
+        
+        // Draw progress bar
+        if (filledWidth > 0) {
+            ctx.fillRect(1, 1, filledWidth, barHeight);
+        }
+        
+        // Draw border
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(1, 1, barWidth, barHeight);
+    }
 }
+
+

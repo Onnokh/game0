@@ -5,7 +5,6 @@ export class GameUI extends ex.ScreenElement {
   private titleLabel!: ex.Label;
   private weaponLabel!: ex.Label;
   private ammoLabel!: ex.Label;
-  private dodgeLabel!: ex.Label;
 
   constructor() {
     super();
@@ -52,53 +51,16 @@ export class GameUI extends ex.ScreenElement {
       })
     });
     this.addChild(this.ammoLabel);
-
-    // Create dodge roll status label
-    this.dodgeLabel = new ex.Label({
-      text: 'Dodge: Ready (SPACE) | Jump: J',
-      pos: ex.vec(16, 80),
-      z: 99999,
-      font: new ex.Font({
-        size: 16,
-        color: ex.Color.Green,
-        textAlign: ex.TextAlign.Left
-      })
-    });
-    this.addChild(this.dodgeLabel);
   }
 
-  updateWeaponStatus(hasWeapon: boolean): void {
-    this.weaponLabel.text = hasWeapon ? 'Weapon: Gun' : 'Weapon: None';
+  updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
+    this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
   }
 
   updateAmmoCount(current: number, max: number): void {
     this.ammoLabel.text = `Ammo: ${current}/${max}`;
   }
 
-  updateDodgeStatus(isRolling: boolean, cooldownRemaining: number, isJumping: boolean = false): void {
-    if (isRolling) {
-      this.dodgeLabel.text = 'Dodge: Rolling! | Jump: J';
-      this.dodgeLabel.font = new ex.Font({
-        size: 16,
-        color: ex.Color.Orange,
-        textAlign: ex.TextAlign.Left
-      });
-    } else if (cooldownRemaining > 0) {
-      this.dodgeLabel.text = `Dodge: Cooldown (${Math.ceil(cooldownRemaining / 1000)}s) | Jump: J ${isJumping ? '(ON)' : ''}`;
-      this.dodgeLabel.font = new ex.Font({
-        size: 16,
-        color: ex.Color.Red,
-        textAlign: ex.TextAlign.Left
-      });
-    } else {
-      this.dodgeLabel.text = `Dodge: Ready (SPACE) | Jump: J ${isJumping ? '(ON)' : ''}`;
-      this.dodgeLabel.font = new ex.Font({
-        size: 16,
-        color: isJumping ? ex.Color.Cyan : ex.Color.Green,
-        textAlign: ex.TextAlign.Left
-      });
-    }
-  }
 
   addToScene(scene: ex.Scene): void {
     scene.add(this);

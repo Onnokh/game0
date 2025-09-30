@@ -158,7 +158,7 @@ export class MyLevel extends ex.Scene {
         oakTrees.forEach(tree => this.add(tree));
         
         // Add weapon to the left of the player with custom stats
-        const weapon = new Weapon(350, 1104, 3, 12, 24); // damage: 3, firerate: 12, magazine: 24
+        const weapon = new Weapon(350, 1104, "AK-47", 3, 12, 24); // damage: 3, firerate: 12, magazine: 24
         this.add(weapon);
         console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
         console.log(`Weapon position: (${weapon.pos.x}, ${weapon.pos.y})`);
@@ -172,7 +172,7 @@ export class MyLevel extends ex.Scene {
     override onPreLoad(loader: ex.DefaultLoader): void {
         // Add any scene specific resources to load
     }
-
+a
     override onActivate(context: ex.SceneActivationContext<unknown>): void {
         // Called when Excalibur transitions to this scene
         // Only 1 scene is active at a time

@@ -145,6 +145,32 @@ export class SpriteFactory {
     });
   }
 
+  static createPlayerDodgeRollAnimation(): ex.Animation {
+    // Create dodge roll animation from jump.png sprite sheet (top row, 6 frames)
+    const jumpSpriteSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.JumpSprite,
+      grid: {
+        rows: 3,
+        columns: 6,
+        spriteWidth: 80,
+        spriteHeight: 80
+      }
+    });
+    
+    // Create animation from top row (6 frames for dodge roll)
+    const frames = [];
+    for (let col = 0; col < 6; col++) {
+      const sprite = jumpSpriteSheet.getSprite(col, 0);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 75 }); // 200ms * 6 frames = 1200ms (matches dodgeRollDuration)
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.End // Play once and stop on last frame
+    });
+  }
+
   // Enemy animations
   static createSkeletonWalkAnimation(): ex.Animation {
     // Create walk animation from Skeleton.png sprite sheet (10 rows, 6 columns)
