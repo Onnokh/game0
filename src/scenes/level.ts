@@ -154,7 +154,7 @@ export class MyLevel extends ex.Scene {
         oakTrees.forEach(tree => this.add(tree));
         
         // Create enemy next to the player (to the right) - aligned to 16px grid
-        const enemy = new Enemy(448, 1104); // 48 pixels to the right of player (448 vs 400)
+        const enemy = new Enemy(448, 804); // 48 pixels to the right of player (448 vs 400)
         enemy.setPlayer(this.player);
         this.add(enemy);
     }

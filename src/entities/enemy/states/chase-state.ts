@@ -40,12 +40,6 @@ export class ChaseState implements IEnemyState {
 
     // Follow the current path
     enemy.followPath();
-
-    // Rotate towards movement direction
-    if (enemy.vel.magnitude > 0) {
-      const direction = enemy.vel.normalize();
-      enemy.rotation = Math.atan2(direction.y, direction.x);
-    }
   }
 
   exit(enemy: Enemy): void {

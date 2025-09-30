@@ -27,10 +27,6 @@ export class AttackState implements IEnemyState {
       return;
     }
 
-    // Face the player
-    const direction = player.pos.sub(enemy.pos).normalize();
-    enemy.rotation = Math.atan2(direction.y, direction.x);
-
     // Attack logic
     this.attackTimer += delta;
     if (this.attackTimer >= this.attackCooldown) {
