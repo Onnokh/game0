@@ -14,7 +14,7 @@ export class Player extends ex.Actor {
   constructor() {
     super({
       name: 'Player',
-      pos: new ex.Vector(400, 1100),
+      pos: new ex.Vector(400, 1104), // Aligned to 16px grid (1100->1104)
       width: 32,
       height: 32, 
       collisionType: ex.CollisionType.Active, // Enable collision for the player

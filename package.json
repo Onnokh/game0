@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/excaliburjs/template-ts-vite#readme",
   "dependencies": {
+    "@excaliburjs/plugin-pathfinding": "^0.31.0",
     "excalibur": "0.31.0"
   },
   "devDependencies": {

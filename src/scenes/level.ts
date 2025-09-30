@@ -1,6 +1,7 @@
 import * as ex from "excalibur";
 import { Player } from "../entities/player";
 import { OakTree } from "../entities/oak-tree";
+import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 
@@ -112,34 +113,40 @@ export class MyLevel extends ex.Scene {
         this.camera.strategy.limitCameraBounds(boundingBox);
         
         // Add oak trees as decorations (keeping bottom area clear for player)
+        // All positions aligned to 16px grid, shifted down by half a tile (8px)
         const oakTrees = [
             // Upper area trees
-            new OakTree(100, 200),   // Far left, upper
-            new OakTree(250, 150),   // Left side, upper
-            new OakTree(400, 180),   // Center, upper
-            new OakTree(550, 220),   // Right side, upper
-            new OakTree(700, 160),   // Far right, upper
+            new OakTree(96, 200),    // Far left, upper (192->200)
+            new OakTree(256, 152),   // Left side, upper (144->152)
+            new OakTree(400, 184),   // Center, upper (176->184)
+            new OakTree(544, 216),   // Right side, upper (208->216)
+            new OakTree(704, 168),   // Far right, upper (160->168)
             
             // Middle area trees
-            new OakTree(150, 400),   // Left side, middle
-            new OakTree(300, 350),   // Left-center, middle
-            new OakTree(500, 380),   // Right-center, middle
-            new OakTree(650, 420),   // Right side, middle
+            new OakTree(144, 408),   // Left side, middle (400->408)
+            new OakTree(304, 360),   // Left-center, middle (352->360)
+            new OakTree(496, 392),   // Right-center, middle (384->392)
+            new OakTree(656, 424),   // Right side, middle (416->424)
             
             // Lower middle area (but not too close to bottom)
-            new OakTree(200, 600),   // Left side, lower middle
-            new OakTree(450, 580),   // Center, lower middle
-            new OakTree(600, 620),   // Right side, lower middle
+            new OakTree(192, 600),   // Left side, lower middle (592->600)
+            new OakTree(448, 584),   // Center, lower middle (576->584)
+            new OakTree(592, 632),   // Right side, lower middle (624->632)
             
             // Scattered trees in middle-lower area
-            new OakTree(350, 500),   // Left-center
-            new OakTree(550, 480),   // Right-center
-            new OakTree(100, 520),   // Far left
-            new OakTree(750, 540),   // Far right
+            new OakTree(352, 504),   // Left-center (496->504)
+            new OakTree(544, 488),   // Right-center (480->488)
+            new OakTree(96, 520),    // Far left (512->520)
+            new OakTree(752, 552),   // Far right (544->552)
         ];
         
         // Add all trees to the scene
         oakTrees.forEach(tree => this.add(tree));
+        
+        // Create enemy next to the player (to the right) - aligned to 16px grid
+        const enemy = new Enemy(448, 1104); // 48 pixels to the right of player (448 vs 400)
+        enemy.setPlayer(this.player);
+        this.add(enemy);
     }
 
     override onPreLoad(loader: ex.DefaultLoader): void {
@@ -166,11 +173,30 @@ export class MyLevel extends ex.Scene {
         this.gameUI.updateVelocityDisplay();
     }
 
-    override onPreDraw(ctx: ex.ExcaliburGraphicsContext, elapsedMs: number): void {
-        // Called before Excalibur draws to the screen
-    }
-
     override onPostDraw(ctx: ex.ExcaliburGraphicsContext, elapsedMs: number): void {
         // Called after Excalibur draws to the screen
+        
+        // Draw debug grid
+        const tileSize = 16;
+        const mapWidth = Math.ceil(ctx.width / tileSize) * tileSize;
+        const mapHeight = Math.ceil(ctx.height / tileSize) * tileSize;
+        
+        // Draw vertical lines
+        for (let x = 0; x <= mapWidth; x += tileSize) {
+            ex.Debug.drawLine(
+                ex.vec(x, 0),
+                ex.vec(x, mapHeight),
+                { color: ex.Color.fromHex("#333333") }
+            );
+        }
+        
+        // Draw horizontal lines
+        for (let y = 0; y <= mapHeight; y += tileSize) {
+            ex.Debug.drawLine(
+                ex.vec(0, y),
+                ex.vec(mapWidth, y),
+                { color: ex.Color.fromHex("#333333") }
+            );
+        }
     }
 }
