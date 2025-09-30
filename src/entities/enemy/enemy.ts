@@ -7,6 +7,7 @@ import { AttackState } from './states/attack-state';
 import { AIActor } from '../ai-actor';
 import { SpriteFactory } from '../../sprites/sprite-factory';
 import { DamageNumber } from '../damage-number';
+import { enemyGroup } from '../../lib/collision-groups';
 
 export class Enemy extends AIActor {
   private player: Player | null = null;
@@ -25,8 +26,11 @@ export class Enemy extends AIActor {
   // Graphics
   private walkAnimation!: ex.Animation;
   private runAnimation!: ex.Animation;
+  private deathAnimation!: ex.Animation;
   private currentAnimation!: ex.Animation;
   private healthBarCanvas!: ex.Canvas;
+  private isDying = false;
+  private isFacingLeft = false;
   
   // Public properties for state access
   public readonly detectionRange = 200;
@@ -45,6 +49,7 @@ export class Enemy extends AIActor {
       width: 32,
       height: 32,
       collisionType: ex.CollisionType.Active,
+      collisionGroup: enemyGroup,
     });
 
     // Store spawn position for wander range
@@ -84,6 +89,9 @@ export class Enemy extends AIActor {
   setAnimation(isRunning: boolean): void {
     const targetAnimation = isRunning ? this.runAnimation : this.walkAnimation;
     if (this.currentAnimation !== targetAnimation) {
+      // Apply current flip state to the new animation
+      targetAnimation.flipHorizontal = this.isFacingLeft;
+      
       // Update the graphics group with new animation
       const group = new ex.GraphicsGroup({
         members: [
@@ -130,6 +138,7 @@ export class Enemy extends AIActor {
     // Create skeleton animations
     this.walkAnimation = SpriteFactory.createSkeletonWalkAnimation();
     this.runAnimation = SpriteFactory.createSkeletonRunAnimation();
+    this.deathAnimation = SpriteFactory.createSkeletonDeathAnimation();
     
     // Start with walk animation
     this.currentAnimation = this.walkAnimation;
@@ -168,6 +177,9 @@ export class Enemy extends AIActor {
     // Update z-index based on y-position for proper depth sorting
     this.z = this.pos.y;
     
+    // Skip updates if dying
+    if (this.isDying) return;
+    
     // Update current state
     this.currentState.update(this, engine, delta);
     
@@ -182,10 +194,12 @@ export class Enemy extends AIActor {
     // Flip sprite based on movement direction
     if (this.vel.x < -10) {
       // Moving left - flip sprite
-      this.graphics.flipHorizontal = true;
+      this.isFacingLeft = true;
+      this.currentAnimation.flipHorizontal = true;
     } else if (this.vel.x > 10) {
       // Moving right - normal sprite
-      this.graphics.flipHorizontal = false;
+      this.isFacingLeft = false;
+      this.currentAnimation.flipHorizontal = false;
     }
     
     // Update animation based on speed
@@ -211,6 +225,9 @@ export class Enemy extends AIActor {
   }
 
   takeDamage(damage: number, isCritical: boolean = false): void {
+    // Don't take damage if already dying
+    if (this.isDying) return;
+    
     this.life = Math.max(0, this.life - damage);
     
     // Create damage number above the enemy
@@ -218,9 +235,38 @@ export class Enemy extends AIActor {
     const damageNumber = DamageNumber.createDamageNumber(damagePos, damage, isCritical);
     this.scene?.add(damageNumber);
     
+    // Flash white when hit
+    this.actions.flash(new ex.Color(255, 255, 255, 0.5), 100);
+    
     if (this.life <= 0) {
-      this.kill();
+      this.playDeathAnimation();
     }
+  }
+
+  private playDeathAnimation(): void {
+    this.isDying = true;
+    
+    // Stop movement
+    this.vel = ex.Vector.Zero;
+    
+    // Hide healthbar
+    const group = new ex.GraphicsGroup({
+      members: [
+        {
+          graphic: this.deathAnimation,
+          offset: ex.vec(0, 0)
+        }
+      ]
+    });
+    this.graphics.use(group);
+    
+    // Listen for animation end
+    this.deathAnimation.events.on('end', () => {
+      this.kill();
+    });
+    
+    // Reset the animation to play from the start
+    this.deathAnimation.reset();
   }
 
   heal(amount: number): void {

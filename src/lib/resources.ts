@@ -1,4 +1,4 @@
-import { ImageSource, DefaultLoader } from "excalibur";
+import { ImageSource, DefaultLoader, FontSource } from "excalibur";
 
 export const Resources = {
   // Character sprites - separate idle, walk, and run animations
@@ -18,6 +18,9 @@ export const Resources = {
 
   // Weapons
   Shotgun: new ImageSource('./images/guns/Shotguns/2Shotgun02.png'),
+
+  // Fonts
+  DeterminationFont: new FontSource('./web/determination.ttf', 'Determination'),
 
 } as const;
 

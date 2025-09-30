@@ -3,7 +3,7 @@ import {SpriteFactory} from '../sprites/sprite-factory';
 import {GameUI} from '../ui/game-ui';
 import {Bullet} from './bullet';
 import {Weapon} from './weapon';
-import { playerCollisionGroup } from '../lib/collision-groups';
+import { playerGroup } from '../lib/collision-groups';
 
 export class Player extends ex.Actor {
     private walkSpeed = 100; // pixels per second for walking
@@ -21,6 +21,8 @@ export class Player extends ex.Actor {
     private currentAmmo = 0;
     private equippedWeapon?: Weapon;
     private weaponVisual?: ex.Actor;
+    private isMousePressed = false;
+    private mouseTargetPos?: ex.Vector;
 
     constructor() {
         super({
@@ -29,7 +31,7 @@ export class Player extends ex.Actor {
             width: 32,
             height: 32,
             collisionType: ex.CollisionType.Active, // Enable collision for the player
-            collisionGroup: playerCollisionGroup,
+            collisionGroup: playerGroup,
         });
     }
 
@@ -47,7 +49,9 @@ export class Player extends ex.Actor {
         this.graphics.use(this.idleAnimation);
         
         // Set up mouse input for shooting
-        this.scene?.engine.input.pointers.on('down', this.onPointerDown.bind(this));
+        this.scene?.engine.input.pointers.primary.on('down', this.onPointerDown.bind(this));
+        this.scene?.engine.input.pointers.primary.on('up', this.onPointerUp.bind(this));
+        this.scene?.engine.input.pointers.primary.on('move', this.onPointerMove.bind(this));
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {
@@ -126,6 +130,11 @@ export class Player extends ex.Actor {
             const offsetX = this.isFacingRight ? -8 : 8;
             this.weaponVisual.pos = ex.vec(offsetX, 6);
         }
+
+        // Handle continuous shooting when mouse is held down
+        if (this.isMousePressed && this.mouseTargetPos && this.equippedWeapon && this.currentAmmo > 0) {
+            this.shoot(this.mouseTargetPos);
+        }
     }
 
     onPreCollision(event: ex.PreCollisionEvent): void {
@@ -177,10 +186,24 @@ export class Player extends ex.Actor {
     }
 
     private onPointerDown(event: ex.PointerEvent): void {
-        // Only shoot if we have a weapon equipped and ammo
+        // Only start shooting if we have a weapon equipped and ammo
         if (this.equippedWeapon && this.currentAmmo > 0) {
-            console.log(`Mouse click - Screen: (${event.screenPos.x}, ${event.screenPos.y}), World: (${event.worldPos.x}, ${event.worldPos.y})`);
-            this.shoot(event.worldPos);
+            this.isMousePressed = true;
+            this.mouseTargetPos = event.worldPos;
+            console.log(`Mouse pressed - Screen: (${event.screenPos.x}, ${event.screenPos.y}), World: (${event.worldPos.x}, ${event.worldPos.y})`);
+        }
+    }
+
+    private onPointerUp(event: ex.PointerEvent): void {
+        this.isMousePressed = false;
+        this.mouseTargetPos = undefined;
+        console.log('Mouse released - stopped shooting');
+    }
+
+    private onPointerMove(event: ex.PointerEvent): void {
+        // Update target position while mouse is pressed for continuous shooting
+        if (this.isMousePressed) {
+            this.mouseTargetPos = event.worldPos;
         }
     }
 
@@ -196,8 +219,8 @@ export class Player extends ex.Actor {
             return;
         }
 
-        // Calculate direction from player to mouse position
-        const playerCenter = this.pos.add(ex.vec(this.width / 2, this.height / 2));
+        // Calculate direction from player center to mouse position
+        const playerCenter = this.pos; // Player anchor is already centered (0.5, 0.5)
         let direction = targetPos.sub(playerCenter);
         
         // Don't shoot if direction is too small (clicking on player)

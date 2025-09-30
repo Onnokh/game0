@@ -173,5 +173,32 @@ export class SpriteFactory {
       strategy: ex.AnimationStrategy.Loop
     });
   }
+
+  static createSkeletonDeathAnimation(): ex.Animation {
+    // Create death animation from Skeleton.png sprite sheet (10 rows, 6 columns)
+    // Row 7 (index 6) = death animation, 4 frames
+    const skeletonSpriteSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.SkeletonSprite,
+      grid: {
+        rows: 10,
+        columns: 6,
+        spriteWidth: 32,
+        spriteHeight: 32
+      }
+    });
+    
+    // Create animation from row 7 (4 frames for death)
+    const frames = [];
+    for (let col = 0; col < 4; col++) {
+      const sprite = skeletonSpriteSheet.getSprite(col, 6); // Row index 6 = Row 7
+      sprite.scale = ex.vec(2, 2); // Scale up 2x like other sprites
+      frames.push({ graphic: sprite, duration: 250 });
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.End // Play once and stop on last frame
+    });
+  }
  
 }

@@ -150,7 +150,6 @@ export class MyLevel extends ex.Scene {
             new OakTree(96, 520),    // Far left (512->520)
             new OakTree(752, 552),   // Far right (544->552)
 
-
             new OakTree(360, 904),   // Far right (544->552)
 
         ];
@@ -159,7 +158,7 @@ export class MyLevel extends ex.Scene {
         oakTrees.forEach(tree => this.add(tree));
         
         // Add weapon to the left of the player with custom stats
-        const weapon = new Weapon(350, 1104, 30, 4, 25); // damage: 30, firerate: 4, magazine: 25
+        const weapon = new Weapon(350, 1104, 3, 12, 24); // damage: 3, firerate: 12, magazine: 24
         this.add(weapon);
         console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
         console.log(`Weapon position: (${weapon.pos.x}, ${weapon.pos.y})`);

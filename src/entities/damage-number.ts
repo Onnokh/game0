@@ -1,4 +1,5 @@
 import * as ex from 'excalibur';
+import { Resources } from '../lib/resources';
 
 export class DamageNumber extends ex.Actor {
     private duration = 750; // How long the damage number stays visible (in milliseconds)
@@ -39,8 +40,7 @@ export class DamageNumber extends ex.Actor {
         
         const text = new ex.Text({
             text: Math.round(this.damage).toString(),
-            font: new ex.Font({
-                family: 'Arial Black, Arial, sans-serif',
+            font: Resources.DeterminationFont.toFont({
                 size: fontSize,
                 color: this.damageColor,
                 textAlign: ex.TextAlign.Center,

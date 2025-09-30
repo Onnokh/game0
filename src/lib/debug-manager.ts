@@ -1,5 +1,6 @@
 import * as ex from 'excalibur';
 import { Player } from '../entities/player';
+import { Resources } from './resources';
 
 /**
  * Centralized debug manager that handles all debug visualizations and info displays.
@@ -33,7 +34,7 @@ export class DebugManager extends ex.ScreenElement {
       text: '',
       pos: ex.vec(engine.drawWidth - 100, 16),
       z: 99999,
-      font: new ex.Font({
+      font: Resources.DeterminationFont.toFont({
         size: 12,
         color: ex.Color.Yellow,
         textAlign: ex.TextAlign.Right
@@ -46,7 +47,7 @@ export class DebugManager extends ex.ScreenElement {
       text: '',
       pos: ex.vec(engine.drawWidth - 100, 32),
       z: 99999,
-      font: new ex.Font({
+      font: Resources.DeterminationFont.toFont({
         size: 12,
         color: ex.Color.Green,
         textAlign: ex.TextAlign.Right
@@ -59,7 +60,7 @@ export class DebugManager extends ex.ScreenElement {
       text: '',
       pos: ex.vec(16, 16),
       z: 99999,
-      font: new ex.Font({
+      font: Resources.DeterminationFont.toFont({
         size: 12,
         color: ex.Color.White,
         textAlign: ex.TextAlign.Left

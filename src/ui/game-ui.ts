@@ -1,4 +1,5 @@
 import * as ex from 'excalibur';
+import { Resources } from '../lib/resources';
 
 export class GameUI extends ex.ScreenElement {
   private titleLabel!: ex.Label;
@@ -15,7 +16,7 @@ export class GameUI extends ex.ScreenElement {
       text: '1337',
       pos: ex.vec(16, 40),
       z: 99999,
-      font: new ex.Font({
+      font: Resources.DeterminationFont.toFont({
         size: 16,
         color: ex.Color.White,
         textAlign: ex.TextAlign.Left
@@ -26,12 +27,13 @@ export class GameUI extends ex.ScreenElement {
     // Create weapon status label
     this.weaponLabel = new ex.Label({
       text: 'Weapon: None',
-      pos: ex.vec(16, 60),
+      pos: ex.vec(engine.drawWidth - 16, engine.drawHeight - 32),
       z: 99999,
-      font: new ex.Font({
+      font: Resources.DeterminationFont.toFont({
         size: 16,
         color: ex.Color.Yellow,
-        textAlign: ex.TextAlign.Left
+        textAlign: ex.TextAlign.Right,
+        lineHeight: 32
       })
     });
     this.addChild(this.weaponLabel);
@@ -39,12 +41,13 @@ export class GameUI extends ex.ScreenElement {
     // Create ammo count label
     this.ammoLabel = new ex.Label({
       text: 'Ammo: -/-',
-      pos: ex.vec(16, 80),
+      pos: ex.vec(engine.drawWidth - 16, engine.drawHeight - 56),
       z: 99999,
-      font: new ex.Font({
-        size: 16,
+      font: Resources.DeterminationFont.toFont({
+        size: 14,
         color: ex.Color.White,
-        textAlign: ex.TextAlign.Left
+        textAlign: ex.TextAlign.Right,
+        lineHeight: 32
       })
     });
     this.addChild(this.ammoLabel);
