@@ -33,7 +33,7 @@ export class ChaseState implements IEnemyState {
 
     // Update path every 500ms
     this.pathUpdateTimer += delta;
-    if (this.pathUpdateTimer >= 500) {
+    if (this.pathUpdateTimer >= 50) {
       enemy.updatePath(engine);
       this.pathUpdateTimer = 0;
     }
@@ -42,7 +42,7 @@ export class ChaseState implements IEnemyState {
     enemy.followPath();
 
     // Rotate towards movement direction
-    if (enemy.vel.size > 0) {
+    if (enemy.vel.magnitude > 0) {
       const direction = enemy.vel.normalize();
       enemy.rotation = Math.atan2(direction.y, direction.x);
     }

@@ -21,7 +21,7 @@ export class Enemy extends ex.Actor {
   private bodyGraphic!: ex.Rectangle;
   
   // Public properties for state access
-  public readonly detectionRange = 100;
+  public readonly detectionRange = 200;
   public readonly attackRange = 50;
 
   constructor(x: number, y: number) {
@@ -262,8 +262,8 @@ export class Enemy extends ex.Actor {
     
     // Draw current state
     ex.Debug.drawText(
-      `State: ${this.currentStateType}`,
-      this.pos.add(ex.vec(-20, -30))
+      this.currentStateType,
+      this.pos.add(ex.vec(-30, -30))
     );
   }
 }

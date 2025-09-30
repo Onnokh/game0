@@ -5,7 +5,7 @@ import { IEnemyState, EnemyStateType } from './enemy-state';
 export class IdleState implements IEnemyState {
   enter(enemy: Enemy): void {
     enemy.vel = ex.Vector.Zero;
-    enemy.setColor(ex.Color.Orange);
+    enemy.setColor(ex.Color.Blue);
   }
 
   update(enemy: Enemy, engine: ex.Engine, delta: number): void {
