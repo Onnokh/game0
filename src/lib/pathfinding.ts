@@ -41,9 +41,12 @@ function createCollisionGrid(
         if (collisionType === ex.CollisionType.Fixed) {
           // Check if this position is within padding distance of the obstacle
           if (actor.collider.bounds) {
-            // Expand bounds by padding amount
-            const expandedBounds = actor.collider.bounds.expand(padding);
-            if (expandedBounds.contains(worldPos)) {
+            const bounds = actor.collider.bounds;
+            // Check if world position is within padding distance of the bounds
+            if (worldPos.x >= bounds.left - padding && 
+                worldPos.x <= bounds.right + padding &&
+                worldPos.y >= bounds.top - padding && 
+                worldPos.y <= bounds.bottom + padding) {
               hasCollision = true;
               break;
             }
