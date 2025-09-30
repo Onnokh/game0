@@ -106,9 +106,28 @@ export function findPath(
   const adjustedStart = ex.vec(start.x - minX, start.y - minY);
   const adjustedEnd = ex.vec(end.x - minX, end.y - minY);
   
+  // Clamp coordinates to grid bounds
+  adjustedStart.x = Math.max(0, Math.min(adjustedStart.x, gridWidth - 1));
+  adjustedStart.y = Math.max(0, Math.min(adjustedStart.y, gridHeight - 1));
+  adjustedEnd.x = Math.max(0, Math.min(adjustedEnd.x, gridWidth - 1));
+  adjustedEnd.y = Math.max(0, Math.min(adjustedEnd.y, gridHeight - 1));
+  
   // Get nodes
   const startNode = astar.getNodeByCoord(adjustedStart.x, adjustedStart.y);
   const endNode = astar.getNodeByCoord(adjustedEnd.x, adjustedEnd.y);
+  
+  // Validate that both nodes exist and are within bounds
+  if (!startNode || !endNode) {
+    console.warn('Pathfinding failed: Invalid start or end coordinates', {
+      start: start,
+      end: end,
+      adjustedStart: adjustedStart,
+      adjustedEnd: adjustedEnd,
+      gridWidth: gridWidth,
+      gridHeight: gridHeight
+    });
+    return [];
+  }
   
   // Find path (with diagonal movement)
   const pathNodes: aStarNode[] = astar.astar(startNode, endNode, true);

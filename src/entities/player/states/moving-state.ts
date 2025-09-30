@@ -5,6 +5,9 @@ import { IPlayerState, PlayerStateType } from './player-state';
 export class MovingState implements IPlayerState {
   enter(player: Player): void {
     // Animation will be set based on sprint state in update
+    // Start emitting walking particles
+    const walkParticles = player.getWalkParticles();
+    walkParticles.isEmitting = true;
   }
 
   update(player: Player, engine: ex.Engine, delta: number): void {
@@ -63,10 +66,17 @@ export class MovingState implements IPlayerState {
     } else {
       player.setAnimation('walk');
     }
+    
+    // Adjust particle emit rate based on sprint state
+    const walkParticles = player.getWalkParticles();
+    walkParticles.emitRate = isSprinting ? 10 : 5; // Double when sprinting
   }
 
   exit(player: Player): void {
     player.vel = ex.Vector.Zero;
+    // Stop emitting walking particles
+    const walkParticles = player.getWalkParticles();
+    walkParticles.isEmitting = false;
   }
 }
 

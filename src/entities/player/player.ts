@@ -20,6 +20,7 @@ export class Player extends ex.Actor {
     private jumpAnimation!: ex.Animation;
     private dodgeRollAnimation!: ex.Animation;
     private dodgeRollParticles!: ex.ParticleEmitter;
+    private walkParticles!: ex.ParticleEmitter;
     private gameUI?: GameUI;
     
     // Shooting mechanics
@@ -103,6 +104,32 @@ export class Player extends ex.Actor {
             }
         });
         this.addChild(this.dodgeRollParticles);
+        
+        // Create walking particle emitter (subtle foot dust)
+        this.walkParticles = new ex.ParticleEmitter({
+            pos: ex.vec(0, 10), // At the feet
+            emitterType: ex.EmitterType.Circle,
+            radius: 3,
+            isEmitting: false,
+            emitRate: 5, // particles per second - much less than dodge roll
+            particle: {
+                life: 2000, // milliseconds - short lived
+                opacity: .3, // Very subtle
+                fade: true,
+                minSize: 3,
+                maxSize: 7,
+                startSize: 7,
+                endSize: 3,
+                minSpeed: 1,
+                maxSpeed: 3,
+                minAngle: 0,
+                maxAngle: Math.PI * 2, // Spread in all directions
+                beginColor: ex.Color.fromHex('#FFFFFF'), // White
+                endColor: ex.Color.fromHex('#E0E0E0'), // Light gray
+                acc: ex.vec(0, 0) // Slight downward drift
+            }
+        });
+        this.addChild(this.walkParticles);
         
         this.on('precollision', this.onPreCollision.bind(this));
 
@@ -278,6 +305,10 @@ export class Player extends ex.Actor {
 
     getDodgeRollParticles(): ex.ParticleEmitter {
         return this.dodgeRollParticles;
+    }
+
+    getWalkParticles(): ex.ParticleEmitter {
+        return this.walkParticles;
     }
 
     // Collision handling

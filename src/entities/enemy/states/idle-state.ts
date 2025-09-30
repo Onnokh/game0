@@ -76,6 +76,7 @@ export class IdleState implements IEnemyState {
       (enemy as any).pathIndex = 0;
     } else {
       // If no path found, wait and try again
+      console.warn('No path found to return to wander range, waiting before retry');
       enemy.setWanderWaitTime(1000);
     }
   }
@@ -103,6 +104,7 @@ export class IdleState implements IEnemyState {
       (enemy as any).pathIndex = 0;
     } else {
       // If no path found, wait and try again
+      console.warn('No path found to wander target, waiting before retry');
       enemy.setWanderWaitTime(1000);
     }
   }
