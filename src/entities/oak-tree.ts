@@ -1,5 +1,6 @@
 import * as ex from 'excalibur';
 import { Resources } from '../lib/resources';
+import { environmentCollisionGroup } from '../lib/collision-groups';
 
 export class OakTree extends ex.Actor {
   constructor(x: number, y: number) {
@@ -8,6 +9,7 @@ export class OakTree extends ex.Actor {
       width: 64,  // 2 tiles wide (2 * 32px)
       height: 80, // 5 tiles tall (5 * 16px)
       collisionType: ex.CollisionType.Fixed, // Tree is immovable
+      collisionGroup: environmentCollisionGroup,
     });
   }
 

@@ -6,6 +6,7 @@ import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
 import {Weapon} from "../entities/weapon";
+import { environmentCollisionGroup } from "../lib/collision-groups";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -157,8 +158,8 @@ export class MyLevel extends ex.Scene {
         // Add all trees to the scene
         oakTrees.forEach(tree => this.add(tree));
         
-        // Add weapon to the left of the player
-        const weapon = new Weapon(350, 1104); // 50 pixels to the left of player
+        // Add weapon to the left of the player with custom stats
+        const weapon = new Weapon(350, 1104, 30, 4, 25); // damage: 30, firerate: 4, magazine: 25
         this.add(weapon);
         console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
         console.log(`Weapon position: (${weapon.pos.x}, ${weapon.pos.y})`);

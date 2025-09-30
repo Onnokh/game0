@@ -6,6 +6,7 @@ import { ChaseState } from './states/chase-state';
 import { AttackState } from './states/attack-state';
 import { AIActor } from '../ai-actor';
 import { SpriteFactory } from '../../sprites/sprite-factory';
+import { DamageNumber } from '../damage-number';
 
 export class Enemy extends AIActor {
   private player: Player | null = null;
@@ -209,8 +210,14 @@ export class Enemy extends AIActor {
     return this.maxLife;
   }
 
-  takeDamage(damage: number): void {
+  takeDamage(damage: number, isCritical: boolean = false): void {
     this.life = Math.max(0, this.life - damage);
+    
+    // Create damage number above the enemy
+    const damagePos = this.pos.add(ex.vec(0, -30)); // Position above the enemy
+    const damageNumber = DamageNumber.createDamageNumber(damagePos, damage, isCritical);
+    this.scene?.add(damageNumber);
+    
     if (this.life <= 0) {
       this.kill();
     }

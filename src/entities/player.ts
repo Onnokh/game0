@@ -1,6 +1,9 @@
 import * as ex from 'excalibur';
 import {SpriteFactory} from '../sprites/sprite-factory';
 import {GameUI} from '../ui/game-ui';
+import {Bullet} from './bullet';
+import {Weapon} from './weapon';
+import { playerCollisionGroup } from '../lib/collision-groups';
 
 export class Player extends ex.Actor {
     private walkSpeed = 100; // pixels per second for walking
@@ -11,8 +14,13 @@ export class Player extends ex.Actor {
     private idleAnimation!: ex.Animation;
     private walkAnimation!: ex.Animation;
     private sprintAnimation!: ex.Animation;
-    private weaponActor?: ex.Actor;
     private gameUI?: GameUI;
+    
+    // Shooting mechanics
+    private lastShotTime = 0;
+    private currentAmmo = 0;
+    private equippedWeapon?: Weapon;
+    private weaponVisual?: ex.Actor;
 
     constructor() {
         super({
@@ -21,6 +29,7 @@ export class Player extends ex.Actor {
             width: 32,
             height: 32,
             collisionType: ex.CollisionType.Active, // Enable collision for the player
+            collisionGroup: playerCollisionGroup,
         });
     }
 
@@ -36,6 +45,9 @@ export class Player extends ex.Actor {
 
         // Start with idle animation
         this.graphics.use(this.idleAnimation);
+        
+        // Set up mouse input for shooting
+        this.scene?.engine.input.pointers.on('down', this.onPointerDown.bind(this));
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {
@@ -53,6 +65,11 @@ export class Player extends ex.Actor {
 
         // Check for sprint (left shift)
         this.isSprinting = input.isHeld(ex.Keys.ShiftLeft);
+
+        // Check for reload (R key)
+        if (input.wasPressed(ex.Keys.KeyR) && this.equippedWeapon && this.currentAmmo < this.equippedWeapon.magazine_size) {
+            this.reload();
+        }
 
         if (input.isHeld(ex.Keys.ArrowLeft) || input.isHeld(ex.Keys.KeyA)) {
             moveX = -1;
@@ -100,51 +117,146 @@ export class Player extends ex.Actor {
         // Apply horizontal flipping based on facing direction
         this.graphics.flipHorizontal = this.isFacingRight;
         
-        // Update weapon flip and position
-        if (this.weaponActor) {
-            this.weaponActor.graphics.flipHorizontal = this.isFacingRight;
-            // Adjust weapon position based on facing direction
+        // Update weapon position and flip
+        if (this.weaponVisual) {
+            // Flip weapon to match character
+            this.weaponVisual.graphics.flipHorizontal = this.isFacingRight;
+            
+            // Position weapon relative to player (switch sides when flipped)
             const offsetX = this.isFacingRight ? -8 : 8;
-            this.weaponActor.pos = ex.vec(offsetX, 6);
+            this.weaponVisual.pos = ex.vec(offsetX, 6);
         }
     }
 
     onPreCollision(event: ex.PreCollisionEvent): void {
         const otherActor = event.other.owner as ex.Actor;
         if (otherActor?.tags?.has('pickup')) {
-            // Get weapon sprite from the weapon actor
-            const weaponSprite = otherActor.graphics.current as ex.Sprite;
-            if (weaponSprite) {
-                console.log('Weapon picked up!', weaponSprite);
+            // Check if it's a weapon and we don't already have one equipped
+            if (otherActor instanceof Weapon && !this.equippedWeapon) {
+                console.log('Weapon picked up!', otherActor);
 
-                // Create a child actor for the weapon
-                this.weaponActor = new ex.Actor({
+                // Store reference to the weapon data
+                this.equippedWeapon = otherActor;
+
+                // Create a visual representation of the weapon
+                this.weaponVisual = new ex.Actor({
                     width: 32,
                     height: 16,
-                    pos: ex.vec(20, 5), // Offset relative to player center
-                    collisionType: ex.CollisionType.PreventCollision
+                    pos: ex.vec(8, 0), // Offset relative to player center
+                    collisionType: ex.CollisionType.PreventCollision,
+                    anchor: ex.vec(0.5, 0.5)
                 });
                 
-                // Clone and add the weapon sprite
-                const clonedSprite = weaponSprite.clone();
-                this.weaponActor.graphics.use(clonedSprite);
+                // Clone the weapon sprite for the visual
+                const weaponSprite = otherActor.graphics.current as ex.Sprite;
+                if (weaponSprite) {
+                    const clonedSprite = weaponSprite.clone();
+                    this.weaponVisual.graphics.use(clonedSprite);
+                }
                 
-                // Add weapon as a child of the player
-                this.addChild(this.weaponActor);
+                // Add weapon visual as child of player
+                this.addChild(this.weaponVisual);
+                
+                // Remove the original weapon from scene
+                otherActor.kill();
+                
+                // Initialize ammo
+                this.currentAmmo = otherActor.magazine_size;
                 
                 // Update UI if available
                 if (this.gameUI) {
                     this.gameUI.updateWeaponStatus(true);
+                    this.gameUI.updateAmmoCount(this.currentAmmo, otherActor.magazine_size);
                 }
-                
-                // Remove pickup from scene
-                otherActor.kill();
             }
         }
     }
 
     setGameUI(gameUI: GameUI): void {
         this.gameUI = gameUI;
+    }
+
+    private onPointerDown(event: ex.PointerEvent): void {
+        // Only shoot if we have a weapon equipped and ammo
+        if (this.equippedWeapon && this.currentAmmo > 0) {
+            console.log(`Mouse click - Screen: (${event.screenPos.x}, ${event.screenPos.y}), World: (${event.worldPos.x}, ${event.worldPos.y})`);
+            this.shoot(event.worldPos);
+        }
+    }
+
+    private shoot(targetPos: ex.Vector): void {
+        if (!this.equippedWeapon) return;
+
+        const currentTime = Date.now();
+        const timeSinceLastShot = currentTime - this.lastShotTime;
+        const minTimeBetweenShots = 1000 / this.equippedWeapon.firerate; // Convert firerate to milliseconds
+
+        // Check if enough time has passed since last shot
+        if (timeSinceLastShot < minTimeBetweenShots) {
+            return;
+        }
+
+        // Calculate direction from player to mouse position
+        const playerCenter = this.pos.add(ex.vec(this.width / 2, this.height / 2));
+        let direction = targetPos.sub(playerCenter);
+        
+        // Don't shoot if direction is too small (clicking on player)
+        if (direction.magnitude < 10) {
+            return;
+        }
+
+        // Normalize the direction to ensure consistent bullet speed
+        direction = direction.normalize();
+
+        // Create bullet starting slightly away from player to avoid immediate collision
+        const bulletStartPos = playerCenter.add(direction.scale(20)); // Start 20 pixels away from player
+        const bullet = new Bullet(bulletStartPos, direction, this.equippedWeapon.damage);
+        this.scene?.add(bullet);
+
+        // Update shooting state
+        this.lastShotTime = currentTime;
+        this.currentAmmo--;
+
+        // Update UI
+        if (this.gameUI) {
+            this.gameUI.updateAmmoCount(this.currentAmmo, this.equippedWeapon.magazine_size);
+        }
+
+        console.log(`Shot fired! Direction: (${direction.x.toFixed(2)}, ${direction.y.toFixed(2)}), Ammo remaining: ${this.currentAmmo}/${this.equippedWeapon.magazine_size}`);
+    }
+
+    getCurrentAmmo(): number {
+        return this.currentAmmo;
+    }
+
+    getMaxAmmo(): number {
+        return this.equippedWeapon?.magazine_size || 0;
+    }
+
+    getWeaponDamage(): number {
+        return this.equippedWeapon?.damage || 0;
+    }
+
+    getWeaponFirerate(): number {
+        return this.equippedWeapon?.firerate || 0;
+    }
+
+    getEquippedWeapon(): Weapon | undefined {
+        return this.equippedWeapon;
+    }
+
+    private reload(): void {
+        if (!this.equippedWeapon) return;
+
+        // Reload to full magazine
+        this.currentAmmo = this.equippedWeapon.magazine_size;
+        
+        // Update UI
+        if (this.gameUI) {
+            this.gameUI.updateAmmoCount(this.currentAmmo, this.equippedWeapon.magazine_size);
+        }
+        
+        console.log(`Reloaded! Ammo: ${this.currentAmmo}/${this.equippedWeapon.magazine_size}`);
     }
 
 }
