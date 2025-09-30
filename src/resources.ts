@@ -2,7 +2,20 @@ import { ImageSource, Loader } from "excalibur";
 
 // It is convenient to put your resources in one place
 export const Resources = {
-  Sword: new ImageSource("./images/sword.png") // Vite public/ directory serves the root images
+  // Character sprites - separate idle, walk, and run animations
+  IdleSprite: new ImageSource('./images/character/idle.png'),
+  WalkSprite: new ImageSource('./images/character/walk.png'),
+  RunSprite: new ImageSource('./images/character/run.png'),
+  
+  // Tileset
+  GrassTile: new ImageSource('./images/tileset/Grass_Middle.png'),
+  CliffTile: new ImageSource('./images/tileset/Cliff_Tile.png'),
+  
+  // Decorations
+  OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
+  
+  // Old resources
+  Sword: new ImageSource("./images/sword.png")
 } as const; // the 'as const' is a neat typescript trick to get strong typing on your resources. 
 // So when you type Resources.Sword -> ImageSource
 

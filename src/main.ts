@@ -7,8 +7,10 @@ import { MyLevel } from "./level";
 const game = new Engine({
   width: 800, // Logical width and height in game pixels
   height: 600,
-  displayMode: DisplayMode.FitScreenAndFill, // Display mode tells excalibur how to fill the window
+  backgroundColor: Color.fromHex("#54C0CA"), // Nice sky blue background
+  displayMode: DisplayMode.FitScreen, // Display mode tells excalibur how to fill the window
   pixelArt: true, // pixelArt will turn on the correct settings to render pixel art without jaggies or shimmering artifacts
+  pixelRatio: 2, // Higher pixel ratio for better quality
   scenes: {
     start: MyLevel
   },
@@ -19,6 +21,9 @@ const game = new Engine({
   // fixedUpdateTimestep: 16 // Turn on fixed update timestep when consistent physic simulation is important
 });
 
+// Enable debug mode to show collision boxes
+game.toggleDebug();
+
 game.start('start', { // name of the start scene 'start'
   loader, // Optional loader (but needed for loading images/sounds)
   inTransition: new FadeInOut({ // Optional in transition
@@ -27,5 +32,5 @@ game.start('start', { // name of the start scene 'start'
     color: Color.ExcaliburBlue
   })
 }).then(() => {
-  // Do something after the game starts
+  console.log('Game started successfully!');
 });

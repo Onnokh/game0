@@ -1,86 +1,109 @@
-import { Actor, Collider, CollisionContact, Engine, Side, vec } from "excalibur";
-import { Resources } from "./resources";
+import * as ex from 'excalibur';
+import { SpriteFactory } from './sprite-factory';
 
-// Actors are the main unit of composition you'll likely use, anything that you want to draw and move around the screen
-// is likely built with an actor
+export class Player extends ex.Actor {
+  private walkSpeed = 100; // pixels per second for walking
+  private sprintSpeed = 200; // pixels per second for sprinting
+  private isMoving = false;
+  private isSprinting = false;
+  private isFacingRight = true;
+  private idleAnimation: ex.Animation;
+  private walkAnimation: ex.Animation;
+  private sprintAnimation: ex.Animation;
 
-// They contain a bunch of useful components that you might use
-// actor.transform
-// actor.motion
-// actor.graphics
-// actor.body
-// actor.collider
-// actor.actions
-// actor.pointer
-
-
-export class Player extends Actor {
   constructor() {
     super({
-      // Giving your actor a name is optional, but helps in debugging using the dev tools or debug mode
-      // https://github.com/excaliburjs/excalibur-extension/
-      // Chrome: https://chromewebstore.google.com/detail/excalibur-dev-tools/dinddaeielhddflijbbcmpefamfffekc
-      // Firefox: https://addons.mozilla.org/en-US/firefox/addon/excalibur-dev-tools/
       name: 'Player',
-      pos: vec(150, 150),
-      width: 100,
-      height: 100,
-      // anchor: vec(0, 0), // Actors default center colliders and graphics with anchor (0.5, 0.5)
-      // collisionType: CollisionType.Active, // Collision Type Active means this participates in collisions read more https://excaliburjs.com/docs/collisiontypes
+      pos: new ex.Vector(400, 1100), // Middle x (400), near bottom y (1100)
+      width: 32,
+      height: 32, // Doubled size: 80x80 -> 160x160
+      collisionType: ex.CollisionType.Active, // Enable collision for the player
     });
+  }
+
+  override onInitialize(): void {
+    // Initialize with no velocity
+    this.vel = ex.vec(0, 0);
     
+    // Create animations
+    this.idleAnimation = SpriteFactory.createPlayerIdleAnimation();
+    this.walkAnimation = SpriteFactory.createPlayerWalkAnimation();
+    this.sprintAnimation = SpriteFactory.createPlayerSprintAnimation();
+    
+    // Start with idle animation
+    this.graphics.use(this.idleAnimation);
   }
 
-  override onInitialize() {
-    // Generally recommended to stick logic in the "On initialize"
-    // This runs before the first update
-    // Useful when
-    // 1. You need things to be loaded like Images for graphics
-    // 2. You need excalibur to be initialized & started 
-    // 3. Deferring logic to run time instead of constructor time
-    // 4. Lazy instantiation
-    this.graphics.add(Resources.Sword.toSprite());
+  override onPreUpdate(engine: ex.Engine, delta: number): void {
+    // Reset velocity each frame
+    this.vel = ex.vec(0, 0);
+    this.isMoving = false;
 
-    // Actions are useful for scripting common behavior, for example patrolling enemies
-    this.actions.delay(2000);
-    this.actions.repeatForever(ctx => {
-      ctx.moveBy({offset: vec(100, 0), duration: 1000});
-      ctx.moveBy({offset: vec(0, 100), duration: 1000});
-      ctx.moveBy({offset: vec(-100, 0), duration: 1000});
-      ctx.moveBy({offset: vec(0, -100), duration: 1000});
-    });
+    // Handle keyboard input
+    const input = engine.input.keyboard;
+    let moveX = 0;
+    let moveY = 0;
+    
+    // Check for sprint (left shift)
+    this.isSprinting = input.isHeld(ex.Keys.ShiftLeft);
+    
+    if (input.isHeld(ex.Keys.ArrowLeft) || input.isHeld(ex.Keys.KeyA)) {
+      moveX = -1;
+      this.isMoving = true;
+      this.isFacingRight = true;
+    }
+    if (input.isHeld(ex.Keys.ArrowRight) || input.isHeld(ex.Keys.KeyD)) {
+      moveX = 1;
+      this.isMoving = true;
+      this.isFacingRight = false;
+    }
+    if (input.isHeld(ex.Keys.ArrowUp) || input.isHeld(ex.Keys.KeyW)) {
+      moveY = -1;
+      this.isMoving = true;
+    }
+    if (input.isHeld(ex.Keys.ArrowDown) || input.isHeld(ex.Keys.KeyS)) {
+      moveY = 1;
+      this.isMoving = true;
+    }
 
-    // Sometimes you want to click on an actor!
-    this.on('pointerdown', evt => {
-      // Pointer events tunnel in z order from the screen down, you can cancel them!
-      // if (true) {
-      //   evt.cancel();
-      // }
-      console.log('You clicked the actor @', evt.worldPos.toString());
-    });
-  }
+    // Normalize diagonal movement to maintain consistent speed
+    if (moveX !== 0 || moveY !== 0) {
+      const normalizedMovement = ex.vec(moveX, moveY).normalize();
+      const currentSpeed = this.isSprinting ? this.sprintSpeed : this.walkSpeed;
+      this.vel = normalizedMovement.scale(currentSpeed);
+    }
 
-  override onPreUpdate(engine: Engine, elapsedMs: number): void {
-    // Put any update logic here runs every frame before Actor builtins
-  }
+    // Update animation based on movement state
+    if (this.isMoving) {
+      if (this.isSprinting && this.graphics.current !== this.sprintAnimation) {
+        this.graphics.use(this.sprintAnimation);
+      } else if (!this.isSprinting && this.graphics.current !== this.walkAnimation) {
+        this.graphics.use(this.walkAnimation);
+      }
+    } else if (!this.isMoving && this.graphics.current !== this.idleAnimation) {
+      this.graphics.use(this.idleAnimation);
+    }
 
-  override onPostUpdate(engine: Engine, elapsedMs: number): void {
-    // Put any update logic here runs every frame after Actor builtins
-  }
+    // Apply horizontal flipping based on facing direction
+    if (this.graphics.current) {
+      this.graphics.current.flipHorizontal = this.isFacingRight;
+    }
 
-  override onPreCollisionResolve(self: Collider, other: Collider, side: Side, contact: CollisionContact): void {
-    // Called before a collision is resolved, if you want to opt out of this specific collision call contact.cancel()
-  }
-
-  override onPostCollisionResolve(self: Collider, other: Collider, side: Side, contact: CollisionContact): void {
-    // Called every time a collision is resolved and overlap is solved
-  }
-
-  override onCollisionStart(self: Collider, other: Collider, side: Side, contact: CollisionContact): void {
-    // Called when a pair of objects are in contact
-  }
-
-  override onCollisionEnd(self: Collider, other: Collider, side: Side, lastContact: CollisionContact): void {
-    // Called when a pair of objects separates
+    // Keep player within grass area bounds (account for 16x16 collision box)
+    const collisionHalfWidth = 8; // 16px collision box / 2
+    const collisionHalfHeight = 8; // 16px collision box / 2
+    
+    if (this.pos.x < 32 + collisionHalfWidth) {
+      this.pos.x = 32 + collisionHalfWidth;
+    }
+    if (this.pos.x > 800 - 32 - collisionHalfWidth) {
+      this.pos.x = 800 - 32 - collisionHalfWidth;
+    }
+    if (this.pos.y < 32 + collisionHalfHeight) { // Top cliff tiles
+      this.pos.y = 32 + collisionHalfHeight;
+    }
+    if (this.pos.y > 1200 - 32 - collisionHalfHeight) { // Bottom cliff tiles (map is 1200px high)
+      this.pos.y = 1200 - 32 - collisionHalfHeight;
+    }
   }
 }
