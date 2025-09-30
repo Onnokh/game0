@@ -31,15 +31,23 @@ export class ChaseState implements IEnemyState {
       return;
     }
 
-    // Update path every 500ms
-    this.pathUpdateTimer += delta;
-    if (this.pathUpdateTimer >= 50) {
-      enemy.updatePath(engine);
-      this.pathUpdateTimer = 0;
-    }
+    // Check if we have direct line of sight to player
+    if (enemy.hasLineOfSightToTarget(player.pos, engine, [player])) {
+      // Move directly towards player if we can see them
+      enemy.moveDirectlyToTarget(player.pos, enemy.getMoveSpeed());
+      enemy.resetPath(); // Clear any existing path
+    } else {
+      // Use pathfinding if line of sight is blocked
+      // Update path every 500ms
+      this.pathUpdateTimer += delta;
+      if (this.pathUpdateTimer >= 50) {
+        enemy.updatePath(player.pos, engine);
+        this.pathUpdateTimer = 0;
+      }
 
-    // Follow the current path
-    enemy.followPath();
+      // Follow the current path
+      enemy.followPath();
+    }
   }
 
   exit(enemy: Enemy): void {

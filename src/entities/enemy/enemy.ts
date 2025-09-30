@@ -4,16 +4,12 @@ import { EnemyStateType, IEnemyState } from './states/enemy-state';
 import { IdleState } from './states/idle-state';
 import { ChaseState } from './states/chase-state';
 import { AttackState } from './states/attack-state';
-import { worldToGrid } from '../../lib/grid-utils';
-import { findPath } from '../../lib/pathfinding';
+import { AIActor } from '../ai-actor';
 
-export class Enemy extends ex.Actor {
+export class Enemy extends AIActor {
   private player: Player | null = null;
   private moveSpeed = 100;
   private idleSpeed = 50;
-  private tileSize = 16;
-  private currentPath: ex.Vector[] = [];
-  private pathIndex = 0;
   
   // State Machine
   private currentState: IEnemyState;
@@ -81,11 +77,6 @@ export class Enemy extends ex.Actor {
 
   setColor(color: ex.Color): void {
     this.bodyGraphic.color = color;
-  }
-
-  resetPath(): void {
-    this.currentPath = [];
-    this.pathIndex = 0;
   }
 
   getSpawnPosition(): ex.Vector {
@@ -182,51 +173,32 @@ export class Enemy extends ex.Actor {
     return normalizeAngle(from + diff * clampedT);
   }
 
-  followPath(speed?: number): void {
-    if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
-      const target = this.currentPath[this.pathIndex];
-      const direction = target.sub(this.pos).normalize();
-      const actualSpeed = speed ?? this.moveSpeed;
-      this.vel = direction.scale(actualSpeed);
-
-      // Check if we've reached the current waypoint
-      if (this.pos.distance(target) < 8) {
-        this.pathIndex++;
-      }
-    } else {
-      this.vel = ex.Vector.Zero;
-    }
-  }
-
   getIdleSpeed(): number {
     return this.idleSpeed;
   }
 
-  updatePath(engine: ex.Engine): void {
-    if (!this.player) return;
-
-    const startGrid = worldToGrid(this.pos, this.tileSize);
-    const endGrid = worldToGrid(this.player.pos, this.tileSize);
-    
-    this.currentPath = findPath(startGrid, endGrid, engine, this.tileSize, this);
-    this.pathIndex = 0;
+  getMoveSpeed(): number {
+    return this.moveSpeed;
   }
 
   override onPostUpdate(engine: ex.Engine, delta: number): void {
+    const currentPath = this.getPath();
+    const pathIndex = this.getPathIndex();
+    
     // Draw path
-    for (let i = 0; i < this.currentPath.length - 1; i++) {
+    for (let i = 0; i < currentPath.length - 1; i++) {
       ex.Debug.drawLine(
-        this.currentPath[i],
-        this.currentPath[i + 1],
+        currentPath[i],
+        currentPath[i + 1],
         { color: ex.Color.Green }
       );
     }
     
     // Draw current target
-    if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
+    if (currentPath.length > 0 && pathIndex < currentPath.length) {
       ex.Debug.drawLine(
         this.pos.add(ex.vec(this.width / 2, this.height / 2)),
-        this.currentPath[this.pathIndex],
+        currentPath[pathIndex],
         { color: ex.Color.Yellow }
       );
     }
