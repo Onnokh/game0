@@ -1,5 +1,9 @@
 import * as ex from 'excalibur';
-import { Player } from './player';
+import { Player } from '../player';
+import { EnemyStateType, IEnemyState } from './states/enemy-state';
+import { IdleState } from './states/idle-state';
+import { ChaseState } from './states/chase-state';
+import { AttackState } from './states/attack-state';
 
 export class Enemy extends ex.Actor {
   private player: Player | null = null;
@@ -7,7 +11,18 @@ export class Enemy extends ex.Actor {
   private tileSize = 16;
   private currentPath: ex.Vector[] = [];
   private pathIndex = 0;
-  private pathUpdateTimer = 0;
+  
+  // State Machine
+  private currentState: IEnemyState;
+  private states: Map<EnemyStateType, IEnemyState>;
+  private currentStateType: EnemyStateType = EnemyStateType.Idle;
+  
+  // Graphics
+  private bodyGraphic!: ex.Rectangle;
+  
+  // Public properties for state access
+  public readonly detectionRange = 100;
+  public readonly attackRange = 50;
 
   constructor(x: number, y: number) {
     super({
@@ -17,34 +32,68 @@ export class Enemy extends ex.Actor {
       height: 32,
       collisionType: ex.CollisionType.Active,
     });
+
+    // Initialize states
+    this.states = new Map([
+      [EnemyStateType.Idle, new IdleState()],
+      [EnemyStateType.Chase, new ChaseState()],
+      [EnemyStateType.Attack, new AttackState()],
+    ]);
+
+    // Set initial state
+    this.currentState = this.states.get(EnemyStateType.Idle)!;
   }
 
   setPlayer(player: Player): void {
     this.player = player;
   }
 
+  getPlayer(): Player | null {
+    return this.player;
+  }
+
+  changeState(newStateType: EnemyStateType): void {
+    if (this.currentStateType === newStateType) return;
+
+    this.currentState.exit(this);
+    this.currentStateType = newStateType;
+    this.currentState = this.states.get(newStateType)!;
+    this.currentState.enter(this);
+  }
+
+  getCurrentStateType(): EnemyStateType {
+    return this.currentStateType;
+  }
+
+  setColor(color: ex.Color): void {
+    this.bodyGraphic.color = color;
+  }
+
+  resetPath(): void {
+    this.currentPath = [];
+    this.pathIndex = 0;
+  }
+
   override onInitialize(): void {
     // Create a simple red square graphic
-    const redSquare = new ex.Rectangle({
+    this.bodyGraphic = new ex.Rectangle({
       width: this.width,
       height: this.height,
       color: ex.Color.Red,
     });
     
-    this.graphics.add(redSquare);
+    this.graphics.add(this.bodyGraphic);
+    
+    // Enter initial state
+    this.currentState.enter(this);
   }
 
   override onPreUpdate(engine: ex.Engine, delta: number): void {
-    if (!this.player) return;
+    // Update current state
+    this.currentState.update(this, engine, delta);
+  }
 
-    // Update path every 500ms
-    this.pathUpdateTimer += delta;
-    if (this.pathUpdateTimer >= 500) {
-      this.updatePath(engine);
-      this.pathUpdateTimer = 0;
-    }
-
-    // Follow the current path
+  followPath(): void {
     if (this.currentPath.length > 0 && this.pathIndex < this.currentPath.length) {
       const target = this.currentPath[this.pathIndex];
       const direction = target.sub(this.pos).normalize();
@@ -59,7 +108,7 @@ export class Enemy extends ex.Actor {
     }
   }
 
-  private updatePath(engine: ex.Engine): void {
+  updatePath(engine: ex.Engine): void {
     if (!this.player) return;
 
     const startGrid = this.worldToGrid(this.pos);
@@ -204,5 +253,18 @@ export class Enemy extends ex.Actor {
         { color: ex.Color.Blue }
       );
     }
+
+    // Draw detection range
+    ex.Debug.drawCircle(this.pos, this.detectionRange, { color: ex.Color.fromHex('#FF000033') });
+    
+    // Draw attack range
+    ex.Debug.drawCircle(this.pos, this.attackRange, { color: ex.Color.fromHex('#FFFF0033') });
+    
+    // Draw current state
+    ex.Debug.drawText(
+      `State: ${this.currentStateType}`,
+      this.pos.add(ex.vec(-20, -30))
+    );
   }
 }
+
