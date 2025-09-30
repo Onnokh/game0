@@ -13,11 +13,13 @@ export class Player extends ex.Actor {
     private walkSpeed = 100; // pixels per second for walking
     private sprintSpeed = 150; // pixels per second for sprinting
     private isFacingRight = true;
+    private isSprinting = false;
     private idleAnimation!: ex.Animation;
     private walkAnimation!: ex.Animation;
     private sprintAnimation!: ex.Animation;
     private jumpAnimation!: ex.Animation;
     private dodgeRollAnimation!: ex.Animation;
+    private dodgeRollParticles!: ex.ParticleEmitter;
     private gameUI?: GameUI;
     
     // Shooting mechanics
@@ -32,7 +34,7 @@ export class Player extends ex.Actor {
     private isDodgeRolling = false;
     private dodgeRollSpeed = 300; // pixels per second during dodge roll
     private dodgeRollDuration = 450; // milliseconds - longer to see animation
-    private dodgeRollCooldown = 3000; // milliseconds
+    private dodgeRollCooldown = 1000; // milliseconds
     private lastDodgeRollTime = 0;
     private dodgeRollDirection = ex.vec(0, 0);
     private cooldownBarCanvas!: ex.Canvas;
@@ -75,6 +77,33 @@ export class Player extends ex.Actor {
         this.sprintAnimation = SpriteFactory.createPlayerSprintAnimation();
         this.jumpAnimation = SpriteFactory.createPlayerJumpAnimation();
         this.dodgeRollAnimation = SpriteFactory.createPlayerDodgeRollAnimation();
+        
+        // Create dodge roll particle emitter
+        this.dodgeRollParticles = new ex.ParticleEmitter({
+            pos: ex.vec(0, 0),
+            emitterType: ex.EmitterType.Circle,
+            radius: 5,
+            isEmitting: false,
+            emitRate: 100, // particles per second
+            particle: {
+                life: 400, // milliseconds
+                opacity: 0.6,
+                fade: true,
+                minSize: 2,
+                maxSize: 6,
+                startSize: 6,
+                endSize: 1,
+                minSpeed: 10,
+                maxSpeed: 30,
+                minAngle: 0, // Will be set dynamically based on dodge direction
+                maxAngle: 0, // Will be set dynamically based on dodge direction
+                beginColor: ex.Color.fromHex('#F5DEB3'), // Light wheat/tan
+                endColor: ex.Color.fromHex('#D4A574'), // Light dusty brown
+                acc: ex.vec(0, 20) // Slight downward acceleration
+            }
+        });
+        this.addChild(this.dodgeRollParticles);
+        
         this.on('precollision', this.onPreCollision.bind(this));
 
         // Start with idle animation
@@ -245,6 +274,10 @@ export class Player extends ex.Actor {
 
     getDodgeRollAnimation(): ex.Animation {
         return this.dodgeRollAnimation;
+    }
+
+    getDodgeRollParticles(): ex.ParticleEmitter {
+        return this.dodgeRollParticles;
     }
 
     // Collision handling

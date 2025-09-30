@@ -40,6 +40,18 @@ export class DodgeRollingState implements IPlayerState {
     
     // Set velocity for dodge roll
     player.vel = dodgeDirection.scale(player.getDodgeRollSpeed());
+    
+    // Configure particles to emit behind the player
+    const particles = player.getDodgeRollParticles();
+    // Calculate the angle opposite to dodge direction (behind the player)
+    const dodgeAngle = Math.atan2(dodgeDirection.y, dodgeDirection.x);
+    const behindAngle = dodgeAngle + Math.PI; // 180 degrees opposite
+    const spreadAngle = Math.PI / 6; // 30 degree spread (±15 degrees)
+    
+    // Set particle angles to emit in a cone behind the player
+    particles.particle.minAngle = behindAngle - spreadAngle / 2;
+    particles.particle.maxAngle = behindAngle + spreadAngle / 2;
+    particles.isEmitting = true;
   }
 
   update(player: Player, engine: ex.Engine, delta: number): void {
@@ -61,6 +73,10 @@ export class DodgeRollingState implements IPlayerState {
     // Stop movement
     player.vel = ex.Vector.Zero;
     player.setIsDodgeRolling(false);
+    
+    // Stop emitting particles
+    const particles = player.getDodgeRollParticles();
+    particles.isEmitting = false;
   }
 }
 
