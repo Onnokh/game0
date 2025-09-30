@@ -2,6 +2,7 @@ import * as ex from 'excalibur';
 
 export class GameUI extends ex.ScreenElement {
   private titleLabel!: ex.Label;
+  private weaponLabel!: ex.Label;
 
   constructor() {
     super();
@@ -10,7 +11,7 @@ export class GameUI extends ex.ScreenElement {
   override onInitialize(engine: ex.Engine): void {
     // Create title label
     this.titleLabel = new ex.Label({
-      text: 'Game0',
+      text: '1337',
       pos: ex.vec(16, 40),
       z: 99999,
       font: new ex.Font({
@@ -20,6 +21,23 @@ export class GameUI extends ex.ScreenElement {
       })
     });
     this.addChild(this.titleLabel);
+
+    // Create weapon status label
+    this.weaponLabel = new ex.Label({
+      text: 'Weapon: None',
+      pos: ex.vec(16, 60),
+      z: 99999,
+      font: new ex.Font({
+        size: 16,
+        color: ex.Color.Yellow,
+        textAlign: ex.TextAlign.Left
+      })
+    });
+    this.addChild(this.weaponLabel);
+  }
+
+  updateWeaponStatus(hasWeapon: boolean): void {
+    this.weaponLabel.text = hasWeapon ? 'Weapon: Gun' : 'Weapon: None';
   }
 
   addToScene(scene: ex.Scene): void {

@@ -5,6 +5,7 @@ import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
+import {Weapon} from "../entities/weapon";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -19,6 +20,9 @@ export class MyLevel extends ex.Scene {
         // Create and add UI
         this.gameUI = new GameUI();
         this.gameUI.addToScene(this);
+        
+        // Connect player to UI
+        this.player.setGameUI(this.gameUI);
         
         // Create and add debug manager
         this.debugManager = new DebugManager();
@@ -153,8 +157,14 @@ export class MyLevel extends ex.Scene {
         // Add all trees to the scene
         oakTrees.forEach(tree => this.add(tree));
         
+        // Add weapon to the left of the player
+        const weapon = new Weapon(350, 1104); // 50 pixels to the left of player
+        this.add(weapon);
+        console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
+        console.log(`Weapon position: (${weapon.pos.x}, ${weapon.pos.y})`);
+        
         // Create enemy next to the player (to the right) - aligned to 16px grid
-        const enemy = new Enemy(448, 804); // 48 pixels to the right of player (448 vs 400)
+        const enemy = new Enemy(448, 1104); // 48 pixels to the right of player (448 vs 400)
         enemy.setPlayer(this.player);
         this.add(enemy);
     }

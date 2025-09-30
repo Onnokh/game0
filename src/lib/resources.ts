@@ -16,6 +16,9 @@ export const Resources = {
   // Decorations
   OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
 
+  // Weapons
+  Weapon: new ImageSource('./images/assets/gun.png'),
+
 } as const;
 
 // Custom loader that suppresses the play button
