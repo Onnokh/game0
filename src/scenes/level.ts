@@ -4,11 +4,12 @@ import { OakTree } from "../entities/oak-tree";
 import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
-import { debugMode } from "../main";
+import { DebugManager } from "../lib/debug-manager";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
     private gameUI!: GameUI;
+    private debugManager!: DebugManager;
 
     override onInitialize(engine: ex.Engine): void {
         // Create player instance
@@ -17,8 +18,12 @@ export class MyLevel extends ex.Scene {
         
         // Create and add UI
         this.gameUI = new GameUI();
-        this.gameUI.setPlayer(this.player);
         this.gameUI.addToScene(this);
+        
+        // Create and add debug manager
+        this.debugManager = new DebugManager();
+        this.debugManager.setPlayer(this.player);
+        this.add(this.debugManager);
         
         // Set up camera to follow the player
         this.camera.strategy.lockToActor(this.player);
@@ -170,37 +175,11 @@ export class MyLevel extends ex.Scene {
 
     override onPostUpdate(engine: ex.Engine, elapsedMs: number): void {
         // Called after everything updates in the scene
-        // Update the UI with current velocity
-        this.gameUI.updateVelocityDisplay();
     }
 
     override onPostDraw(ctx: ex.ExcaliburGraphicsContext, elapsedMs: number): void {
         // Called after Excalibur draws to the screen
-        
-        // Only draw debug grid when debug mode is enabled
-        if (!debugMode) return;
-        
-        // Draw debug grid
-        const tileSize = 16;
-        const mapWidth = Math.ceil(ctx.width / tileSize) * tileSize;
-        const mapHeight = Math.ceil(ctx.height / tileSize) * tileSize;
-        
-        // Draw vertical lines
-        for (let x = 0; x <= mapWidth; x += tileSize) {
-            ex.Debug.drawLine(
-                ex.vec(x, 0),
-                ex.vec(x, mapHeight),
-                { color: ex.Color.fromHex("#333333") }
-            );
-        }
-        
-        // Draw horizontal lines
-        for (let y = 0; y <= mapHeight; y += tileSize) {
-            ex.Debug.drawLine(
-                ex.vec(0, y),
-                ex.vec(mapWidth, y),
-                { color: ex.Color.fromHex("#333333") }
-            );
-        }
+        // Let the debug manager draw its overlay
+        this.debugManager.drawDebugOverlay(ctx);
     }
 }

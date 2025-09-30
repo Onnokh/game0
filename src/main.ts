@@ -1,11 +1,9 @@
 import * as ex from "excalibur";
 import { loader } from "./lib/resources";
 import { MyLevel } from "./scenes/level";
+import { DebugManager } from "./lib/debug-manager";
 
 // Goal is to keep main.ts small and just enough to configure the engine
-
-// Global debug state
-export let debugMode = false;
 
 const game = new ex.Engine({
   width: 800, // Logical width and height in game pixels
@@ -27,9 +25,7 @@ const game = new ex.Engine({
 // Add keyboard listener for debug toggle (backtick key)
 game.input.keyboard.on('press', (evt) => {
   if (evt.key === ex.Keys.Backquote) {
-    debugMode = !debugMode;
-    game.toggleDebug();
-    console.log(`Debug mode: ${debugMode ? 'ON' : 'OFF'}`);
+    DebugManager.toggleDebug(game);
   }
 });
 

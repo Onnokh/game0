@@ -7,9 +7,7 @@
     "dev": "vite",
     "start": "vite",
     "build": "tsc && vite build",
-    "serve": "vite preview",
-    "test": "npm run build && npx playwright test",
-    "test:integration-update": "npx playwright test --update-snapshots"
+    "serve": "vite preview"
   },
   "repository": {
     "type": "git",
@@ -32,7 +30,6 @@
     "excalibur": "0.31.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.2",
     "typescript": "5.9.2",
     "vite": "6.3.6"
