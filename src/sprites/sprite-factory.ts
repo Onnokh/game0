@@ -119,6 +119,32 @@ export class SpriteFactory {
     });
   }
 
+  static createPlayerJumpAnimation(): ex.Animation {
+    // Create jump animation from jump.png sprite sheet (480x240 = 6x3 grid)
+    const jumpSpriteSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.JumpSprite,
+      grid: {
+        rows: 3,
+        columns: 6, // 480/80 = 6 columns
+        spriteWidth: 80,
+        spriteHeight: 80
+      }
+    });
+    
+    // Create animation from top row (sides jump)
+    const frames = [];
+    for (let col = 0; col < 6; col++) { // Use all 6 frames
+      const sprite = jumpSpriteSheet.getSprite(col, 0);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 200 }); // Much slower to see the animation clearly
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Loop // Loop the jump animation
+    });
+  }
+
   // Enemy animations
   static createSkeletonWalkAnimation(): ex.Animation {
     // Create walk animation from Skeleton.png sprite sheet (10 rows, 6 columns)
