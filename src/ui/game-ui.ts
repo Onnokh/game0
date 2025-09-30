@@ -5,6 +5,7 @@ export class GameUI extends ex.ScreenElement {
   private titleLabel!: ex.Label;
   private weaponLabel!: ex.Label;
   private ammoLabel!: ex.Label;
+  private dropHintLabel!: ex.Label;
 
   constructor() {
     super();
@@ -51,16 +52,32 @@ export class GameUI extends ex.ScreenElement {
       })
     });
     this.addChild(this.ammoLabel);
+
+    // Create drop hint label
+    this.dropHintLabel = new ex.Label({
+      text: 'Press [Q] to drop your current weapon',
+      pos: ex.vec(engine.drawWidth - 16, engine.drawHeight - 80),
+      z: 99999,
+      font: Resources.DeterminationFont.toFont({
+        size: 12,
+        color: ex.Color.fromHex('#A0A0A0'), // Gray color for hint text
+        textAlign: ex.TextAlign.Right,
+        lineHeight: 32
+      })
+    });
+    this.dropHintLabel.graphics.visible = false; // Hidden by default
+    this.addChild(this.dropHintLabel);
   }
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
     this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
+    // Show drop hint only when player has a weapon
+    this.dropHintLabel.graphics.visible = hasWeapon;
   }
 
   updateAmmoCount(current: number, max: number): void {
     this.ammoLabel.text = `Ammo: ${current}/${max}`;
   }
-
 
   addToScene(scene: ex.Scene): void {
     scene.add(this);

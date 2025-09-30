@@ -130,8 +130,6 @@ export class Player extends ex.Actor {
             }
         });
         this.addChild(this.walkParticles);
-        
-        this.on('precollision', this.onPreCollision.bind(this));
 
         // Start with idle animation
         this.graphics.use(this.idleAnimation);
@@ -172,6 +170,11 @@ export class Player extends ex.Actor {
         // Handle reload (R key)
         if (input.wasPressed(ex.Keys.KeyR) && this.equippedWeapon && this.currentAmmo < this.equippedWeapon.magazine_size) {
             this.reload();
+        }
+
+        // Handle weapon drop (Q key)
+        if (input.wasPressed(ex.Keys.KeyQ) && this.equippedWeapon) {
+            this.dropWeapon();
         }
 
         // Update current state
@@ -311,49 +314,89 @@ export class Player extends ex.Actor {
         return this.walkParticles;
     }
 
-    // Collision handling
-    onPreCollision(event: ex.PreCollisionEvent): void {
-        const otherActor = event.other.owner as ex.Actor;
-        if (otherActor?.tags?.has('pickup')) {
-            // Check if it's a weapon and we don't already have one equipped
-            if (otherActor instanceof Weapon && !this.equippedWeapon) {
-                console.log('Weapon picked up!', otherActor);
-
-                // Store reference to the weapon data
-                this.equippedWeapon = otherActor;
-
-                // Create a visual representation of the weapon
-                this.weaponVisual = new ex.Actor({
-                    width: 32,
-                    height: 16,
-                    pos: ex.vec(8, 0), // Offset relative to player center
-                    collisionType: ex.CollisionType.PreventCollision,
-                    anchor: ex.vec(0.5, 0.5)
-                });
-                
-                // Clone the weapon sprite for the visual
-                const weaponSprite = otherActor.graphics.current as ex.Sprite;
-                if (weaponSprite) {
-                    const clonedSprite = weaponSprite.clone();
-                    this.weaponVisual.graphics.use(clonedSprite);
-                }
-                
-                // Add weapon visual as child of player
-                this.addChild(this.weaponVisual);
-                
-                // Remove the original weapon from scene
-                otherActor.kill();
-                
-                // Initialize ammo
-                this.currentAmmo = otherActor.magazine_size;
-                
-                // Update UI if available
-                if (this.gameUI) {
-                    this.gameUI.updateWeaponStatus(true, otherActor.name);
-                    this.gameUI.updateAmmoCount(this.currentAmmo, otherActor.magazine_size);
-                }
-            }
+    // Weapon equip method (called by Weapon when player presses E)
+    equipWeapon(weapon: Weapon): void {
+        // If already have a weapon, drop it first (weapon swap)
+        if (this.equippedWeapon) {
+            console.log('Swapping weapons:', this.equippedWeapon.name, '->', weapon.name);
+            this.dropWeapon();
+        } else {
+            console.log('Weapon picked up!', weapon);
         }
+
+        // Store reference to the weapon data
+        this.equippedWeapon = weapon;
+
+        // Create a visual representation of the weapon
+        this.weaponVisual = new ex.Actor({
+            width: 32,
+            height: 16,
+            pos: ex.vec(8, 0), // Offset relative to player center
+            collisionType: ex.CollisionType.PreventCollision,
+            anchor: ex.vec(0.5, 0.5)
+        });
+        
+        // Clone the weapon sprite for the visual
+        const weaponSprite = weapon.graphics.current as ex.Sprite;
+        if (weaponSprite) {
+            const clonedSprite = weaponSprite.clone();
+            this.weaponVisual.graphics.use(clonedSprite);
+        }
+        
+        // Add weapon visual as child of player
+        this.addChild(this.weaponVisual);
+        
+        // Remove the original weapon from scene
+        weapon.kill();
+        
+        // Initialize ammo
+        this.currentAmmo = weapon.magazine_size;
+        
+        // Update UI if available
+        if (this.gameUI) {
+            this.gameUI.updateWeaponStatus(true, weapon.name);
+            this.gameUI.updateAmmoCount(this.currentAmmo, weapon.magazine_size);
+        }
+    }
+
+    // Drop weapon method (called when player presses Q)
+    private dropWeapon(): void {
+        if (!this.equippedWeapon) return;
+
+        console.log('Dropping weapon:', this.equippedWeapon.name);
+
+        // Drop weapon at player's feet (same position)
+        const droppedWeapon = new Weapon(
+            this.pos.x,
+            this.pos.y,
+            this.equippedWeapon.name,
+            this.equippedWeapon.damage,
+            this.equippedWeapon.firerate,
+            this.equippedWeapon.magazine_size
+        );
+
+        // Add the dropped weapon to the scene
+        this.scene?.add(droppedWeapon);
+
+        // Remove the weapon visual from player
+        if (this.weaponVisual) {
+            this.weaponVisual.kill();
+            this.weaponVisual = undefined;
+        }
+
+        // Clear equipped weapon reference
+        this.equippedWeapon = undefined;
+
+        // Reset ammo
+        this.currentAmmo = 0;
+
+        // Update UI
+        if (this.gameUI) {
+            this.gameUI.updateWeaponStatus(false);
+            this.gameUI.updateAmmoCount(0, 0);
+        }
+
+        console.log('Weapon dropped successfully');
     }
 
     setGameUI(gameUI: GameUI): void {
