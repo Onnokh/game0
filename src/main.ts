@@ -1,6 +1,6 @@
 import { Color, DisplayMode, Engine, FadeInOut } from "excalibur";
-import { loader } from "./resources";
-import { MyLevel } from "./level";
+import { loader } from "./lib/resources";
+import { MyLevel } from "./scenes/level";
 
 // Goal is to keep main.ts small and just enough to configure the engine
 

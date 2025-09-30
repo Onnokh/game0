@@ -1,6 +1,5 @@
-import { ImageSource, Loader } from "excalibur";
+import { ImageSource, DefaultLoader } from "excalibur";
 
-// It is convenient to put your resources in one place
 export const Resources = {
   // Character sprites - separate idle, walk, and run animations
   IdleSprite: new ImageSource('./images/character/idle.png'),
@@ -13,15 +12,20 @@ export const Resources = {
   
   // Decorations
   OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
-  
-  // Old resources
-  Sword: new ImageSource("./images/sword.png")
-} as const; // the 'as const' is a neat typescript trick to get strong typing on your resources. 
-// So when you type Resources.Sword -> ImageSource
+
+} as const;
+
+// Custom loader that suppresses the play button
+class NoPlayButtonLoader extends DefaultLoader {
+  override async onUserAction(): Promise<void> {
+    // Automatically resolve without waiting for user input
+    // This suppresses the play button
+    return Promise.resolve();
+  }
+}
 
 // We build a loader and add all of our resources to the boot loader
-// You can build your own loader by extending DefaultLoader
-export const loader = new Loader();
+export const loader = new NoPlayButtonLoader();
 for (const res of Object.values(Resources)) {
   loader.addResource(res);
 }

@@ -1,5 +1,5 @@
 import * as ex from 'excalibur';
-import { Resources } from './resources';
+import { Resources } from '../lib/resources';
 
 export class SpriteFactory {
   // Factory methods for creating sprites and animations
@@ -118,12 +118,5 @@ export class SpriteFactory {
       strategy: ex.AnimationStrategy.Loop
     });
   }
-
-  // Future methods for loading actual spritesheets
-  static async loadSpriteSheet(imagePath: string, frameWidth: number, frameHeight: number): Promise<ex.SpriteSheet> {
-    const imageSource = new ex.ImageSource(imagePath);
-    // This would load an actual spritesheet
-    // For now, return a placeholder
-    throw new Error('Sprite sheet loading not implemented yet');
-  }
+ 
 }

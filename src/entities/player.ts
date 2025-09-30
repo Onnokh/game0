@@ -1,5 +1,5 @@
 import * as ex from 'excalibur';
-import { SpriteFactory } from './sprite-factory';
+import { SpriteFactory } from '../sprites/sprite-factory';
 
 export class Player extends ex.Actor {
   private walkSpeed = 100; // pixels per second for walking
@@ -14,9 +14,9 @@ export class Player extends ex.Actor {
   constructor() {
     super({
       name: 'Player',
-      pos: new ex.Vector(400, 1100), // Middle x (400), near bottom y (1100)
+      pos: new ex.Vector(400, 1100),
       width: 32,
-      height: 32, // Doubled size: 80x80 -> 160x160
+      height: 32, 
       collisionType: ex.CollisionType.Active, // Enable collision for the player
     });
   }
@@ -89,21 +89,5 @@ export class Player extends ex.Actor {
       this.graphics.current.flipHorizontal = this.isFacingRight;
     }
 
-    // Keep player within grass area bounds (account for 16x16 collision box)
-    const collisionHalfWidth = 8; // 16px collision box / 2
-    const collisionHalfHeight = 8; // 16px collision box / 2
-    
-    if (this.pos.x < 32 + collisionHalfWidth) {
-      this.pos.x = 32 + collisionHalfWidth;
-    }
-    if (this.pos.x > 800 - 32 - collisionHalfWidth) {
-      this.pos.x = 800 - 32 - collisionHalfWidth;
-    }
-    if (this.pos.y < 32 + collisionHalfHeight) { // Top cliff tiles
-      this.pos.y = 32 + collisionHalfHeight;
-    }
-    if (this.pos.y > 1200 - 32 - collisionHalfHeight) { // Bottom cliff tiles (map is 1200px high)
-      this.pos.y = 1200 - 32 - collisionHalfHeight;
-    }
   }
 }

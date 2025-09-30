@@ -1,8 +1,8 @@
 import * as ex from "excalibur";
-import { Player } from "./player";
-import { OakTree } from "./oak-tree";
-import { GameUI } from "./game-ui";
-import { Resources } from "./resources";
+import { Player } from "../entities/player";
+import { OakTree } from "../entities/oak-tree";
+import { GameUI } from "../ui/game-ui";
+import { Resources } from "../lib/resources";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -15,6 +15,7 @@ export class MyLevel extends ex.Scene {
         
         // Create and add UI
         this.gameUI = new GameUI();
+        this.gameUI.setPlayer(this.player);
         this.gameUI.addToScene(this);
         
         // Set up camera to follow the player
@@ -60,6 +61,9 @@ export class MyLevel extends ex.Scene {
                 const isLeftEdge = x === 0;
                 const isRightEdge = x === tilesX - 1;
                 
+                // Determine if this tile should have collision (all edge tiles)
+                const isCollidable = isTopEdge || isBottomEdge || isLeftEdge || isRightEdge;
+                
                 // Determine which sprite to use
                 if (isTopEdge && isLeftEdge) {
                     // Top-left corner
@@ -88,6 +92,11 @@ export class MyLevel extends ex.Scene {
                 } else {
                     // Interior - use grass
                     tile.addGraphic(grassSprite);
+                }
+                
+                // Set collision type for edge tiles
+                if (isCollidable) {
+                    tile.solid = true;
                 }
             }
         }
@@ -153,6 +162,8 @@ export class MyLevel extends ex.Scene {
 
     override onPostUpdate(engine: ex.Engine, elapsedMs: number): void {
         // Called after everything updates in the scene
+        // Update the UI with current velocity
+        this.gameUI.updateVelocityDisplay();
     }
 
     override onPreDraw(ctx: ex.ExcaliburGraphicsContext, elapsedMs: number): void {
