@@ -121,6 +121,9 @@ export class Enemy extends AIActor {
   }
 
   override onPreUpdate(engine: ex.Engine, delta: number): void {
+    // Update z-index based on y-position for proper depth sorting
+    this.z = this.pos.y;
+    
     // Update current state
     this.currentState.update(this, engine, delta);
     

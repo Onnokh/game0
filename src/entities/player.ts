@@ -11,8 +11,7 @@ export class Player extends ex.Actor {
     private idleAnimation!: ex.Animation;
     private walkAnimation!: ex.Animation;
     private sprintAnimation!: ex.Animation;
-    private currentWeaponSprite?: ex.Sprite;
-    private hasWeapon = false;
+    private weaponActor?: ex.Actor;
     private gameUI?: GameUI;
 
     constructor() {
@@ -40,6 +39,9 @@ export class Player extends ex.Actor {
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {
+        // Update z-index based on y-position for proper depth sorting
+        this.z = this.pos.y;
+        
         // Reset velocity each frame
         this.vel = ex.vec(0, 0);
         this.isMoving = false;
@@ -90,39 +92,20 @@ export class Player extends ex.Actor {
             targetAnimation = this.idleAnimation;
         }
 
-        // Only update graphics if we need to change animation or add weapon
-        if (this.hasWeapon) {
-            this.updateGraphicsWithWeapon(targetAnimation);
-        } else if (this.graphics.current !== targetAnimation) {
+        // Update animation if needed
+        if (this.graphics.current !== targetAnimation) {
             this.graphics.use(targetAnimation);
         }
 
         // Apply horizontal flipping based on facing direction
-        if (this.graphics.current) {
-            this.graphics.current.flipHorizontal = this.isFacingRight;
-        }
-
-    }
-
-    private updateGraphicsWithWeapon(animation: ex.Animation): void {
-        if (!this.currentWeaponSprite) return;
-
-        // Create a graphics group that combines the animation with the weapon
-        const weaponGroup = new ex.GraphicsGroup({
-            members: [
-                { graphic: animation, offset: ex.vec(0, 0) },
-                { graphic: this.currentWeaponSprite, offset: ex.vec(48, 72) } // Offset weapon relative to player
-            ]
-        });
-
-        // Create a unique key for this animation + weapon combo
-        const groupKey = `${animation.constructor.name}_with_weapon`;
-
-        // Add or update the graphics group
-        this.graphics.add(groupKey, weaponGroup);
+        this.graphics.flipHorizontal = this.isFacingRight;
         
-        if (this.graphics.current !== weaponGroup) {
-            this.graphics.use(groupKey);
+        // Update weapon flip and position
+        if (this.weaponActor) {
+            this.weaponActor.graphics.flipHorizontal = this.isFacingRight;
+            // Adjust weapon position based on facing direction
+            const offsetX = this.isFacingRight ? -8 : 8;
+            this.weaponActor.pos = ex.vec(offsetX, 6);
         }
     }
 
@@ -132,11 +115,22 @@ export class Player extends ex.Actor {
             // Get weapon sprite from the weapon actor
             const weaponSprite = otherActor.graphics.current as ex.Sprite;
             if (weaponSprite) {
-                this.currentWeaponSprite = weaponSprite.clone();
-                console.log('Weapon picked up!', this.currentWeaponSprite);
+                console.log('Weapon picked up!', weaponSprite);
 
+                // Create a child actor for the weapon
+                this.weaponActor = new ex.Actor({
+                    width: 32,
+                    height: 16,
+                    pos: ex.vec(20, 5), // Offset relative to player center
+                    collisionType: ex.CollisionType.PreventCollision
+                });
                 
-                this.hasWeapon = true;
+                // Clone and add the weapon sprite
+                const clonedSprite = weaponSprite.clone();
+                this.weaponActor.graphics.use(clonedSprite);
+                
+                // Add weapon as a child of the player
+                this.addChild(this.weaponActor);
                 
                 // Update UI if available
                 if (this.gameUI) {

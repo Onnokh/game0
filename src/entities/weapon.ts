@@ -5,8 +5,8 @@ export class Weapon extends ex.Actor {
   constructor(x: number, y: number) {
     super({
       pos: new ex.Vector(x, y),
-      width: 64,  // 2 tiles wide (2 * 32px)
-      height: 32, // 1 tile tall (1 * 32px)
+      width: 32,  // Smaller size to match sprite
+      height: 16, // Smaller height to match sprite
       collisionType: ex.CollisionType.Fixed, // Weapon is immovable
       anchor: ex.vec(0.5, 0.5) // Center the actor
     });
@@ -15,27 +15,14 @@ export class Weapon extends ex.Actor {
   }
 
   override onInitialize(): void {
-    const gunSprite = Resources.Weapon.toSprite();
-
-    gunSprite.width = 64;
-    gunSprite.height = 32;
-    // Use default anchor (top-left) to see if that fixes positioning
-    // gunSprite.anchor = ex.vec(0.5, 0.5);
+    const gunSprite = Resources.Shotgun.toSprite();
+    // Keep at native size - the sprite is already a good size
     
-    // Create a background rectangle
-    
-    // Create a graphics group with background and weapon
-    const weaponGroup = new ex.GraphicsGroup({
-      members: [
-        { graphic: gunSprite, offset: ex.vec(0, 0) }
-      ]
-    });
-    
-    this.graphics.add('gun', weaponGroup);
+    this.graphics.add('gun', gunSprite);
     this.graphics.use('gun');
 
-    // Make collider match the visual size and center it
-    const weaponCollider = ex.Shape.Box(64, 32, ex.vec(0.5, 0.5));
+    // Adjust collider to match the actual sprite size (approximately 32x16)
+    const weaponCollider = ex.Shape.Box(32, 16, ex.vec(0.5, 0.5));
     this.collider.set(weaponCollider);
     
     console.log(`Weapon initialized at: (${this.pos.x}, ${this.pos.y})`);

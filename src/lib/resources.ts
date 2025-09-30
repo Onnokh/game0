@@ -17,7 +17,7 @@ export const Resources = {
   OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
 
   // Weapons
-  Weapon: new ImageSource('./images/assets/gun.png'),
+  Shotgun: new ImageSource('./images/guns/Shotguns/2Shotgun02.png'),
 
 } as const;
 

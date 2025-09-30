@@ -14,14 +14,18 @@ export class OakTree extends ex.Actor {
   override onInitialize(): void {
     // Create sprite from the oak tree image
     const oakTreeSprite = Resources.OakTree.toSprite();
+    oakTreeSprite.scale = ex.vec(2, 2); // Double the size
     
     // Add the sprite to graphics
     this.graphics.add('oak-tree', oakTreeSprite);
     this.graphics.use('oak-tree');
     
     // Create a box collider for the bottom 32x32px of the tree
-    const trunkCollider = ex.Shape.Box(32, 16, ex.vec(0.5,-0.5));
+    const trunkCollider = ex.Shape.Box(64, 32, ex.vec(0.5,-0.5));
     this.collider.set(trunkCollider);
+    
+    // Set z-index based on y-position for proper depth sorting
+    this.z = this.pos.y;
   }
 
 }
