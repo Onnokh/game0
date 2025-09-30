@@ -6,6 +6,9 @@ export const Resources = {
   WalkSprite: new ImageSource('./images/character/walk.png'),
   RunSprite: new ImageSource('./images/character/run.png'),
   
+  // Enemy sprites
+  SkeletonSprite: new ImageSource('./images/enemies/skeleton/Skeleton.png'),
+  
   // Tileset
   GrassTile: new ImageSource('./images/tileset/Grass_Middle.png'),
   CliffTile: new ImageSource('./images/tileset/Cliff_Tile.png'),

@@ -118,5 +118,60 @@ export class SpriteFactory {
       strategy: ex.AnimationStrategy.Loop
     });
   }
+
+  // Enemy animations
+  static createSkeletonWalkAnimation(): ex.Animation {
+    // Create walk animation from Skeleton.png sprite sheet (10 rows, 6 columns)
+    // Row 2 (index 1) = walking animation
+    const skeletonSpriteSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.SkeletonSprite,
+      grid: {
+        rows: 10,
+        columns: 6,
+        spriteWidth: 32,
+        spriteHeight: 32
+      }
+    });
+    
+    // Create animation from row 2 (6 frames for walking)
+    const frames = [];
+    for (let col = 0; col < 6; col++) {
+      const sprite = skeletonSpriteSheet.getSprite(col, 1); // Row index 1 = Row 2
+      sprite.scale = ex.vec(2, 2); // Scale up 2x like player sprites
+      frames.push({ graphic: sprite, duration: 150 });
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Loop
+    });
+  }
+
+  static createSkeletonRunAnimation(): ex.Animation {
+    // Create run animation from Skeleton.png sprite sheet (10 rows, 6 columns)
+    // Row 5 (index 4) = running animation
+    const skeletonSpriteSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.SkeletonSprite,
+      grid: {
+        rows: 10,
+        columns: 6,
+        spriteWidth: 32,
+        spriteHeight: 32
+      }
+    });
+    
+    // Create animation from row 5 (6 frames for running)
+    const frames = [];
+    for (let col = 0; col < 6; col++) {
+      const sprite = skeletonSpriteSheet.getSprite(col, 4); // Row index 4 = Row 5
+      sprite.scale = ex.vec(2, 2); // Scale up 2x like player sprites
+      frames.push({ graphic: sprite, duration: 100 }); // Faster frames for running
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Loop
+    });
+  }
  
 }

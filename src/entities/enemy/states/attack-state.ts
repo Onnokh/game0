@@ -9,7 +9,6 @@ export class AttackState implements IEnemyState {
 
   enter(enemy: Enemy): void {
     enemy.vel = ex.Vector.Zero;
-    enemy.setColor(ex.Color.Yellow);
   }
 
   update(enemy: Enemy, engine: ex.Engine, delta: number): void {

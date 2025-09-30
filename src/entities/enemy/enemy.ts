@@ -5,6 +5,7 @@ import { IdleState } from './states/idle-state';
 import { ChaseState } from './states/chase-state';
 import { AttackState } from './states/attack-state';
 import { AIActor } from '../ai-actor';
+import { SpriteFactory } from '../../sprites/sprite-factory';
 
 export class Enemy extends AIActor {
   private player: Player | null = null;
@@ -17,7 +18,9 @@ export class Enemy extends AIActor {
   private currentStateType: EnemyStateType = EnemyStateType.Idle;
   
   // Graphics
-  private bodyGraphic!: ex.Rectangle;
+  private walkAnimation!: ex.Animation;
+  private runAnimation!: ex.Animation;
+  private currentAnimation!: ex.Animation;
   
   // Public properties for state access
   public readonly detectionRange = 200;
@@ -28,9 +31,6 @@ export class Enemy extends AIActor {
   private spawnPosition: ex.Vector;
   private wanderTarget: ex.Vector | null = null;
   private wanderWaitTime = 0;
-  
-  // Rotation
-  private rotationSpeed = 5; // radians per second
 
   constructor(x: number, y: number) {
     super({
@@ -75,8 +75,12 @@ export class Enemy extends AIActor {
     return this.currentStateType;
   }
 
-  setColor(color: ex.Color): void {
-    this.bodyGraphic.color = color;
+  setAnimation(isRunning: boolean): void {
+    const targetAnimation = isRunning ? this.runAnimation : this.walkAnimation;
+    if (this.currentAnimation !== targetAnimation) {
+      this.graphics.use(targetAnimation);
+      this.currentAnimation = targetAnimation;
+    }
   }
 
   getSpawnPosition(): ex.Vector {
@@ -104,14 +108,13 @@ export class Enemy extends AIActor {
   }
 
   override onInitialize(): void {
-    // Create a simple red square graphic
-    this.bodyGraphic = new ex.Rectangle({
-      width: this.width,
-      height: this.height,
-      color: ex.Color.Red,
-    });
+    // Create skeleton animations
+    this.walkAnimation = SpriteFactory.createSkeletonWalkAnimation();
+    this.runAnimation = SpriteFactory.createSkeletonRunAnimation();
     
-    this.graphics.add(this.bodyGraphic);
+    // Start with walk animation
+    this.currentAnimation = this.walkAnimation;
+    this.graphics.use(this.walkAnimation);
     
     // Enter initial state
     this.currentState.enter(this);
@@ -121,56 +124,24 @@ export class Enemy extends AIActor {
     // Update current state
     this.currentState.update(this, engine, delta);
     
-    // Auto-rotate towards movement direction or target
-    this.updateRotation(delta);
+    // Update sprite direction based on velocity
+    this.updateSpriteDirection();
   }
 
-  private updateRotation(delta: number): void {
-    let targetRotation: number | null = null;
-    
-    // If moving, rotate towards velocity direction
-    if (this.vel.magnitude > 0) {
-      const direction = this.vel.normalize();
-      targetRotation = Math.atan2(direction.y, direction.x);
-    }
-    // If stationary but has a player target (attacking), face the player
-    else if (this.player) {
-      const distance = this.pos.distance(this.player.pos);
-      if (distance < this.attackRange * 1.5) {
-        const direction = this.player.pos.sub(this.pos).normalize();
-        targetRotation = Math.atan2(direction.y, direction.x);
-      }
+  private updateSpriteDirection(): void {
+    // Flip sprite based on movement direction
+    if (this.vel.x < -10) {
+      // Moving left - flip sprite
+      this.graphics.flipHorizontal = true;
+    } else if (this.vel.x > 10) {
+      // Moving right - normal sprite
+      this.graphics.flipHorizontal = false;
     }
     
-    // Lerp rotation towards target
-    if (targetRotation !== null) {
-      this.rotation = this.lerpAngle(this.rotation, targetRotation, this.rotationSpeed * (delta / 1000));
-    }
-  }
-
-  private lerpAngle(from: number, to: number, t: number): number {
-    // Normalize angles to -π to π range
-    const normalizeAngle = (angle: number) => {
-      while (angle > Math.PI) angle -= Math.PI * 2;
-      while (angle < -Math.PI) angle += Math.PI * 2;
-      return angle;
-    };
-    
-    from = normalizeAngle(from);
-    to = normalizeAngle(to);
-    
-    // Find the shortest rotation direction
-    let diff = to - from;
-    if (diff > Math.PI) {
-      diff -= Math.PI * 2;
-    } else if (diff < -Math.PI) {
-      diff += Math.PI * 2;
-    }
-    
-    // Clamp t to prevent overshooting
-    const clampedT = Math.min(t, 1);
-    
-    return normalizeAngle(from + diff * clampedT);
+    // Update animation based on speed
+    const speed = this.vel.magnitude;
+    const isRunning = speed > this.idleSpeed * 1.2; // Switch to run animation when moving faster than idle speed
+    this.setAnimation(isRunning);
   }
 
   getIdleSpeed(): number {

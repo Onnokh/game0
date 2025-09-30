@@ -6,7 +6,6 @@ export class ChaseState implements IEnemyState {
   private pathUpdateTimer = 0;
 
   enter(enemy: Enemy): void {
-    enemy.setColor(ex.Color.Red);
     enemy.resetPath();
   }
 

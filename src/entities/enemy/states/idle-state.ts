@@ -7,7 +7,6 @@ import { findPath } from '../../../lib/pathfinding';
 export class IdleState implements IEnemyState {
   enter(enemy: Enemy): void {
     enemy.vel = ex.Vector.Zero;
-    enemy.setColor(ex.Color.Blue);
     enemy.resetPath();
   }
 
