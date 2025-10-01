@@ -39,6 +39,7 @@ export class Player extends ex.Actor {
     private dodgeRollDirection = ex.vec(0, 0);
     private cooldownBarCanvas!: ex.Canvas;
     
+    
     // Recoil properties
     private recoilVelocity = ex.vec(0, 0);
 
@@ -166,7 +167,6 @@ export class Player extends ex.Actor {
         // Update z-index based on y-position for proper depth sorting
         this.z = this.pos.y;
 
-        const currentTime = Date.now();
         const input = engine.input.keyboard;
 
         // Handle jump input (J key)
@@ -187,6 +187,8 @@ export class Player extends ex.Actor {
             this.dropWeapon();
         }
 
+        // Check if weapon loading is complete
+        this.checkWeaponLoadingComplete();
 
         // Apply existing recoil velocity BEFORE state update
         // States will blend this with intended movement
@@ -221,9 +223,8 @@ export class Player extends ex.Actor {
             this.shoot(this.mouseTargetPos);
         }
         
-        // Flag cooldown bar for redraw if cooldown is active but dodge roll is finished
-        const cooldownRemaining = Math.max(0, this.dodgeRollCooldown - (currentTime - this.lastDodgeRollTime));
-        if (cooldownRemaining > 0 && !this.isDodgeRolling) {
+        // Flag cooldown bar for redraw if weapon is loading
+        if (this.equippedWeapon?.isCurrentlyLoading) {
             this.cooldownBarCanvas.flagDirty();
         }
     }
@@ -345,6 +346,14 @@ export class Player extends ex.Actor {
 
         // Store reference to the weapon entity
         this.equippedWeapon = weapon;
+
+        // Set up auto-reload callback
+        this.equippedWeapon.setAutoReloadCallback(() => {
+            // Update UI when auto-reload starts
+            if (this.gameUI) {
+                this.gameUI.updateAmmoCount(weapon.currentAmmo, weapon.magazine_size);
+            }
+        });
 
         // Create a visual representation of the weapon
         this.weaponVisual = new ex.Actor({
@@ -541,24 +550,31 @@ export class Player extends ex.Actor {
     private reload(): void {
         if (!this.equippedWeapon) return;
 
-        // Reload to full magazine using weapon method
-        this.equippedWeapon.reload();
-        
-        // Update UI
-        if (this.gameUI) {
-            this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+        // Start weapon loading through the weapon
+        if (this.equippedWeapon.startLoading()) {
+            // Update UI immediately to show loading started
+            if (this.gameUI) {
+                this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+            }
         }
-        
-        console.log(`Reloaded! Ammo: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size}`);
     }
 
-    // Cooldown bar drawing
+    private checkWeaponLoadingComplete(): void {
+        if (!this.equippedWeapon) return;
+
+        // Check if weapon loading is complete
+        if (this.equippedWeapon.checkLoadingComplete()) {
+            // Update UI when loading completes
+            if (this.gameUI) {
+                this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+            }
+        }
+    }
+
+    // Weapon loading bar drawing
     private drawCooldownIndicator(ctx: ex.ExcaliburGraphicsContext): void {
-        const currentTime = Date.now();
-        const cooldownRemaining = Math.max(0, this.dodgeRollCooldown - (currentTime - this.lastDodgeRollTime));
-        
-        // Only draw if there's a cooldown active AND the dodge roll is finished
-        if (cooldownRemaining <= 0 || this.isDodgeRolling) return;
+        // Only draw if weapon is loading
+        if (!this.equippedWeapon?.isCurrentlyLoading) return;
         
         // Draw the canvas below the player using the graphic's draw method
         ctx.save();
@@ -568,13 +584,10 @@ export class Player extends ex.Actor {
     }
 
     private drawCooldownBarToCanvas(ctx: CanvasRenderingContext2D): void {
-        // Calculate progress from when dodge finishes to when cooldown ends
-        // Dodge duration: 0-1200ms (not shown)
-        // Cooldown shown: 1200-2000ms (800ms window)
-        const cooldownAfterDodge = this.dodgeRollCooldown - this.dodgeRollDuration; // 800ms
-        const progressStart = this.dodgeRollDuration; // 1200ms
-        const timeElapsed = Date.now() - this.lastDodgeRollTime;
-        const cooldownProgress = Math.max(0, Math.min(1, (timeElapsed - progressStart) / cooldownAfterDodge));
+        if (!this.equippedWeapon) return;
+        
+        // Get loading progress from weapon
+        const loadingProgress = this.equippedWeapon.getLoadingProgress();
         
         const barWidth = 32;
         const barHeight = 4;
@@ -586,11 +599,11 @@ export class Player extends ex.Actor {
         ctx.fillStyle = '#333333';
         ctx.fillRect(1, 1, barWidth, barHeight);
         
-        // Calculate filled width (fills as cooldown progresses)
-        const filledWidth = barWidth * cooldownProgress;
+        // Calculate filled width (fills as loading progresses)
+        const filledWidth = barWidth * loadingProgress;
         
-        // Light blue progress bar
-        ctx.fillStyle = '#64C8FF';
+        // Orange progress bar for weapon loading
+        ctx.fillStyle = '#FF8C00';
         
         // Draw progress bar
         if (filledWidth > 0) {

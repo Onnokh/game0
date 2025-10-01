@@ -23,6 +23,7 @@ interface WeaponTypeConfig {
   magazineSize: number;     // Magazine capacity
   spriteSource: ex.ImageSource; // Sprite image source for this weapon type
   recoil: number;           // Recoil/pushback force when shooting
+  loadingDuration: number;  // Loading time in milliseconds
 }
 
 /**
@@ -38,6 +39,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     magazineSize: 30,
     spriteSource: Resources.AssaultRifle,
     recoil: 90,             // Medium recoil
+    loadingDuration: 2500,  // 2.5 seconds loading time
   },
   [WeaponType.Shotgun]: {
     name: 'Shotgun',
@@ -48,6 +50,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     magazineSize: 8,
     spriteSource: Resources.Shotgun,
     recoil: 150,             // High recoil (powerful weapon)
+    loadingDuration: 3000,  // 3 seconds loading time (slower, more complex)
   },
   [WeaponType.Pistol]: {
     name: 'Pistol',
@@ -58,6 +61,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     magazineSize: 12,
     spriteSource: Resources.Pistol,
     recoil: 40,              // Low recoil
+    loadingDuration: 1500,  // 1.5 seconds loading time (fastest)
   },
   [WeaponType.SMG]: {
     name: 'SMG',
@@ -68,6 +72,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     magazineSize: 25,
     spriteSource: Resources.SMG,
     recoil: 60,              // Very low recoil (fast fire rate)
+    loadingDuration: 2000,  // 2 seconds loading time
   },
 };
 
@@ -85,6 +90,7 @@ export class WeaponStatsComponent extends ex.Component {
   public spreadAngle: number;
   public spriteSource: ex.ImageSource;
   public recoil: number;
+  public loadingDuration: number;
 
   constructor(
     type: WeaponType = WeaponType.Pistol,
@@ -108,6 +114,7 @@ export class WeaponStatsComponent extends ex.Component {
     this.spreadAngle = config.spreadAngle;
     this.spriteSource = config.spriteSource;
     this.recoil = config.recoil;
+    this.loadingDuration = config.loadingDuration;
   }
 
   canShoot(): boolean {

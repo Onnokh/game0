@@ -5,6 +5,9 @@ import { InteractableComponent } from '../components/interactable-component';
 
 export class Weapon extends ex.Actor {
   private pickupLabel!: ex.Label;
+  private isLoading = false;
+  private lastLoadTime = 0;
+  private onAutoReloadStart?: () => void;;
 
   constructor(x: number, y: number, type: WeaponType) {
     super({
@@ -54,11 +57,74 @@ export class Weapon extends ex.Actor {
   }
 
   shoot(): boolean {
-    return this.get(WeaponStatsComponent)?.shoot() || false;
+    const weaponStats = this.get(WeaponStatsComponent);
+    if (!weaponStats) return false;
+    
+    const shot = weaponStats.shoot();
+    
+    // Always auto-reload when ammo hits 0
+    if (shot && weaponStats.currentAmmo === 0 && !this.isLoading) {
+      this.startLoading();
+      // Notify player about auto-reload start
+      if (this.onAutoReloadStart) {
+        this.onAutoReloadStart();
+      }
+    }
+    
+    return shot;
   }
 
   reload(): void {
     this.get(WeaponStatsComponent)?.reload();
+  }
+
+  // Start weapon loading process
+  startLoading(): boolean {
+    if (this.isLoading) return false;
+    
+    this.isLoading = true;
+    this.lastLoadTime = Date.now();
+    console.log(`Starting weapon loading...`);
+    return true;
+  }
+
+  // Check if loading is complete and finish if so
+  checkLoadingComplete(): boolean {
+    if (!this.isLoading) return false;
+
+    const weaponStats = this.get(WeaponStatsComponent);
+    if (!weaponStats) return false;
+
+    const timeElapsed = Date.now() - this.lastLoadTime;
+    if (timeElapsed >= weaponStats.loadingDuration) {
+      // Complete the reload
+      this.reload();
+      this.isLoading = false;
+      console.log(`Weapon loading complete! Ammo: ${this.currentAmmo}/${this.magazine_size}`);
+      return true;
+    }
+    return false;
+  }
+
+  // Get loading progress (0-1)
+  getLoadingProgress(): number {
+    if (!this.isLoading) return 0;
+
+    const weaponStats = this.get(WeaponStatsComponent);
+    if (!weaponStats) return 0;
+
+    const timeElapsed = Date.now() - this.lastLoadTime;
+    return Math.max(0, Math.min(1, timeElapsed / weaponStats.loadingDuration));
+  }
+
+  // Check if currently loading
+  get isCurrentlyLoading(): boolean {
+    return this.isLoading;
+  }
+
+  // Set callback for when auto-reload starts
+  setAutoReloadCallback(callback: () => void): void {
+    this.onAutoReloadStart = callback;
   }
 
   override onInitialize(): void {
