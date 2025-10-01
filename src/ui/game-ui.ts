@@ -2,28 +2,22 @@ import * as ex from 'excalibur';
 import { Resources } from '../lib/resources';
 
 export class GameUI extends ex.ScreenElement {
-  private titleLabel!: ex.Label;
   private weaponLabel!: ex.Label;
   private ammoLabel!: ex.Label;
   private dropHintLabel!: ex.Label;
+  private roundLabel!: ex.Label;
+  private enemiesLabel!: ex.Label;
+  private fpsLabel!: ex.Label;
+  private fps: number = 0;
+  private frameCount: number = 0;
+  private fpsUpdateTimer: number = 0;
+  private readonly FPS_UPDATE_INTERVAL = 250; // Update FPS display every 250ms
 
   constructor() {
     super();
   }
 
   override onInitialize(engine: ex.Engine): void {
-    // Create title label
-    this.titleLabel = new ex.Label({
-      text: '1337',
-      pos: ex.vec(16, 40),
-      z: 99999,
-      font: Resources.DeterminationFont.toFont({
-        size: 16,
-        color: ex.Color.White,
-        textAlign: ex.TextAlign.Left
-      })
-    });
-    this.addChild(this.titleLabel);
 
     // Create weapon status label
     this.weaponLabel = new ex.Label({
@@ -67,6 +61,45 @@ export class GameUI extends ex.ScreenElement {
     });
     this.dropHintLabel.graphics.isVisible = false; // Hidden by default
     this.addChild(this.dropHintLabel);
+
+    // Create round info label
+    this.roundLabel = new ex.Label({
+      text: 'Round: 1',
+      pos: ex.vec(16, 16),
+      z: 99999,
+      font: Resources.DeterminationFont.toFont({
+        size: 18,
+        color: ex.Color.fromHex('#FFD700'), // Gold color
+        textAlign: ex.TextAlign.Left
+      })
+    });
+    this.addChild(this.roundLabel);
+
+    // Create enemies remaining label
+    this.enemiesLabel = new ex.Label({
+      text: 'Enemies: 0',
+      pos: ex.vec(16, 40),
+      z: 99999,
+      font: Resources.DeterminationFont.toFont({
+        size: 16,
+        color: ex.Color.White,
+        textAlign: ex.TextAlign.Left
+      })
+    });
+    this.addChild(this.enemiesLabel);
+
+    // Create FPS counter label
+    this.fpsLabel = new ex.Label({
+      text: 'FPS: 0',
+      pos: ex.vec(engine.drawWidth - 16, 16),
+      z: 99999,
+      font: Resources.DeterminationFont.toFont({
+        size: 12,
+        color: ex.Color.White,
+        textAlign: ex.TextAlign.Right
+      })
+    });
+    this.addChild(this.fpsLabel);
   }
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
@@ -81,5 +114,32 @@ export class GameUI extends ex.ScreenElement {
 
   addToScene(scene: ex.Scene): void {
     scene.add(this);
+  }
+
+  updateRoundInfo(roundNumber: number, remainingEnemies: number): void {
+    if (this.roundLabel) {
+      this.roundLabel.text = `Round: ${roundNumber}`;
+    }
+    if (this.enemiesLabel) {
+      this.enemiesLabel.text = `Enemies: ${remainingEnemies}`;
+    }
+  }
+
+  override onPreUpdate(engine: ex.Engine, delta: number): void {
+    // Update FPS calculation
+    this.frameCount++;
+    this.fpsUpdateTimer += delta;
+    
+    if (this.fpsUpdateTimer >= this.FPS_UPDATE_INTERVAL) {
+      // Calculate FPS based on frames counted over the interval
+      this.fps = Math.round((this.frameCount * 1000) / this.fpsUpdateTimer);
+      this.frameCount = 0;
+      this.fpsUpdateTimer = 0;
+      
+      // Update FPS display
+      if (this.fpsLabel) {
+        this.fpsLabel.text = `FPS: ${this.fps}`;
+      }
+    }
   }
 }

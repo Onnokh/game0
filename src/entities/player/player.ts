@@ -495,7 +495,7 @@ export class Player extends ex.Actor {
             this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
         }
 
-        console.log(`${weaponStats.name} fired ${bulletCount} bullet(s)! Ammo: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size} (consumed 1 ammo)`);
+        // Removed console.log for performance
     }
 
     getEquippedWeapon(): Weapon | undefined {

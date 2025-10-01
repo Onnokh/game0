@@ -11,12 +11,7 @@ export class DebugManager extends ex.ScreenElement {
   
   private velocityLabel!: ex.Label;
   private debugModeLabel!: ex.Label;
-  private fpsLabel!: ex.Label;
   private player: Player | null = null;
-  private fps: number = 0;
-  private frameCount: number = 0;
-  private fpsUpdateTimer: number = 0;
-  private readonly FPS_UPDATE_INTERVAL = 250; // Update FPS display every 250ms
 
   static isDebugEnabled(): boolean {
     return DebugManager.debugEnabled;
@@ -32,7 +27,7 @@ export class DebugManager extends ex.ScreenElement {
     // Create debug mode indicator label
     this.debugModeLabel = new ex.Label({
       text: '',
-      pos: ex.vec(engine.drawWidth - 100, 16),
+      pos: ex.vec(engine.drawWidth - 100, 32),
       z: 99999,
       font: Resources.DeterminationFont.toFont({
         size: 12,
@@ -41,19 +36,6 @@ export class DebugManager extends ex.ScreenElement {
       })
     });
     this.addChild(this.debugModeLabel);
-
-    // Create FPS counter label
-    this.fpsLabel = new ex.Label({
-      text: '',
-      pos: ex.vec(engine.drawWidth - 100, 32),
-      z: 99999,
-      font: Resources.DeterminationFont.toFont({
-        size: 12,
-        color: ex.Color.Green,
-        textAlign: ex.TextAlign.Right
-      })
-    });
-    this.addChild(this.fpsLabel);
 
     // Create velocity display label
     this.velocityLabel = new ex.Label({
@@ -74,25 +56,12 @@ export class DebugManager extends ex.ScreenElement {
   }
 
   override onPreUpdate(engine: ex.Engine, delta: number): void {
-    // Update FPS calculation
-    this.frameCount++;
-    this.fpsUpdateTimer += delta;
-    
-    if (this.fpsUpdateTimer >= this.FPS_UPDATE_INTERVAL) {
-      // Calculate FPS based on frames counted over the interval
-      this.fps = Math.round((this.frameCount * 1000) / this.fpsUpdateTimer);
-      this.frameCount = 0;
-      this.fpsUpdateTimer = 0;
-    }
-
     // Update debug UI visibility and content
     if (DebugManager.debugEnabled) {
       this.debugModeLabel.text = 'DEBUG ON';
-      this.fpsLabel.text = `FPS: ${this.fps}`;
       this.updateVelocityDisplay();
     } else {
       this.debugModeLabel.text = '';
-      this.fpsLabel.text = '';
       this.velocityLabel.text = '';
     }
   }

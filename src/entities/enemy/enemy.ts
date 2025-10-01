@@ -15,8 +15,8 @@ export class Enemy extends AIActor {
   private idleSpeed = 50;
   
   // Health
-  private life = 100;
-  private maxLife = 100;
+  private life = 500;
+  private maxLife = 500;
   
   // State Machine
   private currentState: IEnemyState;
@@ -185,9 +185,6 @@ export class Enemy extends AIActor {
     
     // Update sprite direction based on velocity
     this.updateSpriteDirection();
-    
-    // Flag healthbar for redraw
-    this.healthBarCanvas.flagDirty();
   }
 
   private updateSpriteDirection(): void {
@@ -228,15 +225,11 @@ export class Enemy extends AIActor {
     // Don't take damage if already dying
     if (this.isDying) return;
     
+    // Apply damage immediately for health calculation
     this.life = Math.max(0, this.life - damage);
     
-    // Create damage number above the enemy
-    const damagePos = this.pos.add(ex.vec(0, -30)); // Position above the enemy
-    const damageNumber = DamageNumber.createDamageNumber(damagePos, damage, isCritical);
-    this.scene?.add(damageNumber);
-    
-    // Flash white when hit
-    this.actions.flash(new ex.Color(255, 255, 255, 0.5), 100);
+    // Flag health bar for redraw only when health changes
+    this.healthBarCanvas.flagDirty();
     
     if (this.life <= 0) {
       this.playDeathAnimation();
@@ -262,6 +255,7 @@ export class Enemy extends AIActor {
     
     // Listen for animation end
     this.deathAnimation.events.on('end', () => {
+      this.emit('died');
       this.kill();
     });
     

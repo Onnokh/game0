@@ -2,24 +2,27 @@ import * as ex from "excalibur";
 import { Player } from "../entities/player";
 import { OakTree } from "../entities/oak-tree";
 import { Rock } from "../entities/rock";
-import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
 import { Weapon } from "../entities/weapon";
-import { WeaponType } from "../components/weapon-stats-component";
+import { WeaponStatsComponent, WeaponType } from "../components/weapon-stats-component";
 import { InteractionSystem } from "../systems/interaction-system";
 import { BulletSystem } from "../systems/bullet-system";
+import { DamageNumberSystem } from "../systems/damage-number-system";
+import { LevelRoundsConfig, RoundManager } from "../lib/rounds";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
     private gameUI!: GameUI;
     private debugManager!: DebugManager;
+    private roundManager!: RoundManager;
 
     override onInitialize(engine: ex.Engine): void {
         // Add ECS systems
         this.world.add(new InteractionSystem(this.world));
         this.world.add(new BulletSystem(this.world));
+        this.world.add(new DamageNumberSystem(this.world));
         
         // Create player instance
         this.player = new Player();
@@ -210,10 +213,56 @@ export class MyLevel extends ex.Scene {
         this.add(pistol);
         this.add(smg);
         
-        // Create enemy next to the player (to the right) - aligned to 16px grid
-        const enemy = new Enemy(448, 704); // 48 pixels to the right of player (448 vs 400)
-        enemy.setPlayer(this.player);
-        this.add(enemy);
+        // Rounds configuration placeholder
+        const roundsConfig: LevelRoundsConfig = {
+            autoAdvance: true,
+            interRoundDelayMs: 1000,
+            rounds: [
+                {
+                    spawns: [
+                        { type: "default", count: 3, cadenceMs: 0, area: { x: 120, y: 640, width: 600, height: 300 } }
+                    ]
+                },
+                {
+                    spawns: [
+                        { type: "default", count: 5, cadenceMs: 400, area: { x: 120, y: 640, width: 600, height: 300 } }
+                    ]
+                }
+            ]
+        };
+
+        // Initialize round manager
+        this.roundManager = new RoundManager(this, this.player, roundsConfig);
+
+        // Example of listening to round events
+        this.on("roundStart", (e: any) => {
+            console.log(`Round ${e.round} started`);
+            this.updateRoundUI();
+        });
+        this.on("roundClear", (e: any) => {
+            console.log(`Round ${e.round} cleared`);
+            this.updateRoundUI();
+        });
+        this.on("allRoundsComplete", () => {
+            console.log("All rounds complete!");
+            this.updateRoundUI();
+        });
+
+        // Update UI on enemy death
+        this.on("enemyDied", () => {
+            this.updateRoundUI();
+        });
+
+        // Start first round after a small delay to ensure UI is fully initialized
+        const startTimer = new ex.Timer({
+            interval: 100,
+            repeats: false,
+            fcn: () => {
+                this.roundManager.startFirstRound();
+            }
+        });
+        this.add(startTimer);
+        startTimer.start();
     }
 
     override onPreLoad(loader: ex.DefaultLoader): void {
@@ -225,14 +274,24 @@ export class MyLevel extends ex.Scene {
         // Only 1 scene is active at a time
     }
 
+    override onPreUpdate(engine: ex.Engine, delta: number): void {
+        // Handle manual round advance (N key)
+        if (engine.input.keyboard.wasPressed(ex.Keys.KeyN)) {
+            this.roundManager.startNextRound();
+        }
+    }
+
+    private updateRoundUI(): void {
+        if (this.gameUI && this.roundManager) {
+            this.gameUI.updateRoundInfo(this.roundManager.getCurrentRoundNumber(), this.roundManager.getRemainingEnemies());
+        }
+    }
+
     override onDeactivate(context: ex.SceneActivationContext): void {
         // Called when Excalibur transitions away from this scene
         // Only 1 scene is active at a time
     }
 
-    override onPreUpdate(engine: ex.Engine, elapsedMs: number): void {
-        // Called before anything updates in the scene
-    }
 
     override onPostUpdate(engine: ex.Engine, elapsedMs: number): void {
         // Called after everything updates in the scene

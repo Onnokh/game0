@@ -22,7 +22,6 @@ export class BulletSystem extends ex.System {
     for (const entity of this.bulletQuery.entities) {
       const bullet = entity.get(BulletComponent)!;
       const motion = entity.get(ex.MotionComponent)!;
-      const transform = entity.get(ex.TransformComponent)!;
 
       // Update distance traveled
       const distanceThisFrame = motion.vel.magnitude * (elapsed / 1000);
@@ -35,9 +34,6 @@ export class BulletSystem extends ex.System {
         }
         continue;
       }
-
-      // Update z-index for proper depth sorting (keep bullets above everything else)
-      transform.z = transform.pos.y + 1000;
     }
   }
 }

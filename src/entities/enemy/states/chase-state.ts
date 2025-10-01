@@ -37,9 +37,8 @@ export class ChaseState implements IEnemyState {
       enemy.resetPath(); // Clear any existing path
     } else {
       // Use pathfinding if line of sight is blocked
-      // Update path every 500ms
       this.pathUpdateTimer += delta;
-      if (this.pathUpdateTimer >= 50) {
+      if (this.pathUpdateTimer >= 100) {
         enemy.updatePath(player.pos, engine);
         this.pathUpdateTimer = 0;
       }

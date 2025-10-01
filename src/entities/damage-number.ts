@@ -3,20 +3,23 @@ import { Resources } from '../lib/resources';
 
 export class DamageNumber extends ex.Actor {
     private duration = 750; // How long the damage number stays visible (in milliseconds)
-    private fadeStartTime = 500; // When to start fading out (in milliseconds)
     private floatSpeed = 50; // How fast the number floats upward (pixels per second)
     private startTime: number;
     private damage: number;
     private damageColor: ex.Color;
-    private textGraphic?: ex.Text;
     private isCritical: boolean = false;
+    private animationStartTime: number;
+    private isAnimating: boolean = false;
+    private growDuration = 150; // How long the grow animation takes
+    private fadeStartTime: number;
+    private hasGrown: boolean = false; // Track if grow animation has completed
 
     constructor(position: ex.Vector, damage: number, color: ex.Color = ex.Color.White, isCritical: boolean = false) {
         super({
             name: 'DamageNumber',
             pos: position,
-            width: 64,
-            height: 20,
+            width: 32, // Smaller width
+            height: 16, // Smaller height
             collisionType: ex.CollisionType.PreventCollision,
             anchor: ex.vec(0.5, 0.5)
         });
@@ -25,82 +28,93 @@ export class DamageNumber extends ex.Actor {
         this.damageColor = color;
         this.isCritical = isCritical;
         this.startTime = Date.now();
+        this.animationStartTime = this.startTime + 300; // Start animation after 300ms grace period
+        this.isAnimating = false;
+        this.fadeStartTime = this.startTime + this.duration - 300; // Start fading 300ms before end
+        this.hasGrown = false; // Reset grow state for new damage number
         
         // Set high z-index to appear above everything
         this.z = 2000;
+        
+        // Start small for grow animation
+        this.scale = ex.vec(0.5, 0.5);
         
         // Create the damage text graphic
         this.createDamageText();
     }
 
     private createDamageText(): void {
-        // Create text graphic for the damage number with outline for better visibility
         const fontSize = this.isCritical ? 18 : 14; // Larger text for critical hits
-        const shadowBlur = this.isCritical ? 4 : 2; // More pronounced shadow for critical hits
+        const damageText = Math.round(this.damage).toString();
         
-        const text = new ex.Text({
-            text: Math.round(this.damage).toString(),
+        // Create shadow text (dark, slightly offset)
+        const shadowText = new ex.Text({
+            text: damageText,
+            font: Resources.DeterminationFont.toFont({
+                size: fontSize,
+                color: ex.Color.Black,
+                textAlign: ex.TextAlign.Center,
+                baseAlign: ex.BaseAlign.Middle
+            })
+        });
+        
+        // Create main text
+        const mainText = new ex.Text({
+            text: damageText,
             font: Resources.DeterminationFont.toFont({
                 size: fontSize,
                 color: this.damageColor,
                 textAlign: ex.TextAlign.Center,
-                baseAlign: ex.BaseAlign.Middle,
-                shadow: {
-                    offset: ex.vec(2, 2),
-                    blur: shadowBlur,
-                    color: ex.Color.Black
-                }
+                baseAlign: ex.BaseAlign.Middle
             })
         });
+        
+        // Create a graphics group with shadow offset
+        const textGroup = new ex.GraphicsGroup({
+            members: [
+                { graphic: shadowText, offset: ex.vec(2, 2) }, // Shadow offset
+                { graphic: mainText, offset: ex.vec(0, 0) }    // Main text
+            ]
+        });
 
-        this.textGraphic = text;
-        this.graphics.use(text);
+        this.graphics.use(textGroup);
     }
 
     override onInitialize(): void {
-        // Add slight random offset to prevent overlapping damage numbers
-        const randomOffset = ex.vec(
-            (Math.random() - 0.5) * 20, // Random X offset between -10 and 10
-            (Math.random() - 0.5) * 10  // Random Y offset between -5 and 5
-        );
-        this.pos = this.pos.add(randomOffset);
+        // Removed random offset for better performance
+        // Damage numbers will appear at consistent positions
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {
         const elapsed = Date.now() - this.startTime;
         
-        // Float upward
-        this.pos = this.pos.add(ex.vec(0, -this.floatSpeed * (delta / 1000)));
-        
-        // Scale animation - start small, grow to normal size, then shrink slightly
-        let scale = 1;
-        const maxScale = this.isCritical ? 1.4 : 1.2; // Critical hits scale more
-        const minScale = this.isCritical ? 0.3 : 0.5; // Critical hits start smaller
-        
-        if (elapsed < 200) {
-            // Grow from min to max in first 200ms
-            const growProgress = elapsed / 200;
-            scale = minScale + (growProgress * (maxScale - minScale));
-        } else if (elapsed < 400) {
-            // Shrink from max to 1.0 in next 200ms
-            const shrinkProgress = (elapsed - 200) / 200;
-            scale = maxScale - (shrinkProgress * (maxScale - 1.0));
+        // Grow animation (first 150ms) - only if not already grown
+        if (!this.hasGrown && elapsed < this.growDuration) {
+            const growProgress = elapsed / this.growDuration;
+            const scale = 0.5 + (growProgress * 0.5); // Grow from 0.5 to 1.0
+            this.scale = ex.vec(scale, scale);
+        } else if (!this.hasGrown) {
+            // Mark as grown and ensure full scale
+            this.hasGrown = true;
+            this.scale = ex.vec(1, 1);
         }
         
-        // Apply scaling
-        this.scale = ex.vec(scale, scale);
-        
-        // Handle fading out
-        if (elapsed >= this.fadeStartTime) {
-            const fadeProgress = (elapsed - this.fadeStartTime) / (this.duration - this.fadeStartTime);
-            const alpha = Math.max(0, 1 - fadeProgress);
-            
-            // Update text color with new alpha
-            if (this.textGraphic && this.textGraphic.font instanceof ex.Font) {
-                const newColor = this.damageColor.clone();
-                newColor.a = alpha;
-                this.textGraphic.font.color = newColor;
+        // Only start floating after the grace period (300ms)
+        if (elapsed >= 300) {
+            if (!this.isAnimating) {
+                this.isAnimating = true;
+                console.log('Started floating damage number:', this.damage); // Debug log
             }
+            
+            // Float upward
+            this.pos = this.pos.add(ex.vec(0, -this.floatSpeed * (delta / 1000)));
+        }
+        
+        // Fade out animation (last 300ms)
+        if (elapsed >= this.fadeStartTime) {
+            const fadeProgress = (elapsed - this.fadeStartTime) / 300;
+            const opacity = Math.max(0, 1 - fadeProgress);
+            this.graphics.opacity = opacity;
         }
         
         // Remove when duration is complete
@@ -109,16 +123,36 @@ export class DamageNumber extends ex.Actor {
         }
     }
 
+    // Method to update the damage number with new values
+    updateDamage(newDamage: number, isCritical: boolean = false): void {
+        this.damage = newDamage;
+        this.isCritical = isCritical;
+        
+        // Update the text graphic
+        this.createDamageText();
+        
+        // Reset the timer to extend the duration
+        this.startTime = Date.now();
+        this.animationStartTime = this.startTime + 300; // Reset animation start time
+        this.fadeStartTime = this.startTime + this.duration - 300; // Reset fade start time
+        this.isAnimating = false; // Reset animation state
+        
+        // Don't reset hasGrown - keep the grown state
+        // Don't reset scale and opacity - keep current state for smooth updates
+        // Only reset opacity if it was fading out
+        if (this.graphics.opacity < 1) {
+            this.graphics.opacity = 1; // Reset opacity only if fading
+        }
+        
+        console.log('Updated damage number to:', newDamage); // Debug log
+    }
+
     // Static factory method to create damage numbers with different colors based on damage type
     static createDamageNumber(position: ex.Vector, damage: number, isCritical: boolean = false): DamageNumber {
         let color: ex.Color;
         
         if (isCritical) {
             color = ex.Color.fromHex('#FFD700'); // Critical hits in gold
-        } else if (damage >= 50) {
-            color = ex.Color.Red; // High damage in red
-        } else if (damage >= 25) {
-            color = ex.Color.Orange; // Medium damage in orange
         } else {
             color = ex.Color.White; // Low damage in white
         }
