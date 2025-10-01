@@ -51,7 +51,8 @@ export class MovingState implements IPlayerState {
     // Normalize diagonal movement
     const normalizedMovement = ex.vec(moveX, moveY).normalize();
     const speed = isSprinting ? player.getSprintSpeed() : player.getWalkSpeed();
-    player.vel = normalizedMovement.scale(speed);
+    const desiredVel = normalizedMovement.scale(speed);
+    player.vel = desiredVel.add(player.vel);
     
     // Update facing direction
     if (moveX < 0) {

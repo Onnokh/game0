@@ -38,6 +38,9 @@ export class Player extends ex.Actor {
     private lastDodgeRollTime = 0;
     private dodgeRollDirection = ex.vec(0, 0);
     private cooldownBarCanvas!: ex.Canvas;
+    
+    // Recoil properties
+    private recoilVelocity = ex.vec(0, 0);
 
     // Jump properties
     private isJumping = false;
@@ -178,7 +181,19 @@ export class Player extends ex.Actor {
             this.dropWeapon();
         }
 
-        // Update current state
+        // Apply existing recoil velocity BEFORE state update
+        // States will blend this with intended movement
+        this.vel = this.recoilVelocity;
+        
+        // Decay recoil over time
+        this.recoilVelocity = this.recoilVelocity.scale(0.88);
+        
+        // Stop recoil when it's very small
+        if (this.recoilVelocity.magnitude < 1) {
+            this.recoilVelocity = ex.vec(0, 0);
+        }
+        
+        // Update current state (can blend recoil with movement)
         this.currentState.update(this, engine, delta);
         
         // Apply horizontal flipping based on facing direction
@@ -467,6 +482,13 @@ export class Player extends ex.Actor {
             const bullet = new Bullet(bulletStartPos, bulletDirection, weaponStats.damage);
             this.scene?.add(bullet);
         }
+
+        // Apply recoil as a separate velocity that decays over time
+        const recoilForce = weaponStats.recoil;
+        const recoilDirection = direction.scale(-1); // Opposite direction
+        
+        // Add to recoil velocity (separate from movement)
+        this.recoilVelocity = this.recoilVelocity.add(recoilDirection.scale(recoilForce));
 
         // Update shooting state - use weapon's shoot method
         this.lastShotTime = currentTime;

@@ -22,6 +22,7 @@ interface WeaponTypeConfig {
   damage: number;           // Damage per bullet
   magazineSize: number;     // Magazine capacity
   spriteSource: ex.ImageSource; // Sprite image source for this weapon type
+  recoil: number;           // Recoil/pushback force when shooting
 }
 
 /**
@@ -36,6 +37,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     damage: 12,
     magazineSize: 30,
     spriteSource: Resources.AssaultRifle,
+    recoil: 90,             // Medium recoil
   },
   [WeaponType.Shotgun]: {
     name: 'Shotgun',
@@ -45,6 +47,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     damage: 8,              // Lower damage per pellet
     magazineSize: 8,
     spriteSource: Resources.Shotgun,
+    recoil: 150,             // High recoil (powerful weapon)
   },
   [WeaponType.Pistol]: {
     name: 'Pistol',
@@ -54,6 +57,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     damage: 15,
     magazineSize: 12,
     spriteSource: Resources.Pistol,
+    recoil: 40,              // Low recoil
   },
   [WeaponType.SMG]: {
     name: 'SMG',
@@ -63,6 +67,7 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponTypeConfig> = {
     damage: 8,
     magazineSize: 25,
     spriteSource: Resources.SMG,
+    recoil: 60,              // Very low recoil (fast fire rate)
   },
 };
 
@@ -79,6 +84,7 @@ export class WeaponStatsComponent extends ex.Component {
   public bulletCount: number;
   public spreadAngle: number;
   public spriteSource: ex.ImageSource;
+  public recoil: number;
 
   constructor(
     type: WeaponType = WeaponType.Pistol,
@@ -101,6 +107,7 @@ export class WeaponStatsComponent extends ex.Component {
     this.bulletCount = config.bulletCount;
     this.spreadAngle = config.spreadAngle;
     this.spriteSource = config.spriteSource;
+    this.recoil = config.recoil;
   }
 
   canShoot(): boolean {
