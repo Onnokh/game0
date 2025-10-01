@@ -19,7 +19,7 @@ export class Weapon extends ex.Actor {
     this.addComponent(new WeaponStatsComponent(type));
     this.addComponent(new InteractableComponent(
       ex.Keys.KeyE,
-      50, // interact radius
+      25, // interact radius
       (interactor) => this.pickupWeapon(interactor)
     ));
     

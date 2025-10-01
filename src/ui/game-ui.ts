@@ -65,14 +65,14 @@ export class GameUI extends ex.ScreenElement {
         lineHeight: 32
       })
     });
-    this.dropHintLabel.graphics.visible = false; // Hidden by default
+    this.dropHintLabel.graphics.isVisible = false; // Hidden by default
     this.addChild(this.dropHintLabel);
   }
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
     this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
     // Show drop hint only when player has a weapon
-    this.dropHintLabel.graphics.visible = hasWeapon;
+    this.dropHintLabel.graphics.isVisible = hasWeapon;
   }
 
   updateAmmoCount(current: number, max: number): void {

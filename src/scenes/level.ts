@@ -172,11 +172,6 @@ export class MyLevel extends ex.Scene {
         this.add(shotgun);
         this.add(pistol);
         this.add(smg);
-        console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
-        console.log(`AK-47 position: (${ak47.pos.x}, ${ak47.pos.y})`);
-        console.log(`Shotgun position: (${shotgun.pos.x}, ${shotgun.pos.y})`);
-        console.log(`Pistol position: (${pistol.pos.x}, ${pistol.pos.y})`);
-        console.log(`SMG position: (${smg.pos.x}, ${smg.pos.y})`);
         
         // Create enemy next to the player (to the right) - aligned to 16px grid
         const enemy = new Enemy(448, 704); // 48 pixels to the right of player (448 vs 400)

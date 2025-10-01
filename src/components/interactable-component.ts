@@ -8,7 +8,7 @@ export class InteractableComponent extends ex.Component {
 
   constructor(
     public interactKey: ex.Keys = ex.Keys.KeyE,
-    public interactRadius: number = 50,
+    public interactRadius: number = 25,
     public onInteract?: (interactor: ex.Actor) => void
   ) {
     super();
