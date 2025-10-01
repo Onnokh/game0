@@ -3,7 +3,8 @@ import {SpriteFactory} from '../../sprites/sprite-factory';
 import {GameUI} from '../../ui/game-ui';
 import {Bullet} from '../bullet';
 import {Weapon} from '../weapon';
-import { WeaponStatsComponent, HealthComponent, AmmoComponent } from '../../components';
+import { WeaponStatsComponent, HealthComponent, AmmoComponent, PunchComponent } from '../../components';
+import { PunchSystem } from '../../systems/punch-system';
 import { playerGroup } from '../../lib/collision-groups';
 import { IPlayerState, PlayerStateType } from './states/player-state';
 import { IdleState } from './states/idle-state';
@@ -51,6 +52,10 @@ export class Player extends ex.Actor {
     // Ammo properties
     private ammoComponent: AmmoComponent;
 
+    // Punch properties
+    private punchComponent: PunchComponent;
+    private punchSystem?: PunchSystem;
+
     // State Machine
     private currentState: IPlayerState;
     private states: Map<PlayerStateType, IPlayerState>;
@@ -68,9 +73,15 @@ export class Player extends ex.Actor {
 
         // Initialize health component
         this.healthComponent = new HealthComponent(100);
+        this.addComponent(this.healthComponent);
         
         // Initialize ammo component
         this.ammoComponent = new AmmoComponent();
+        this.addComponent(this.ammoComponent);
+
+        // Initialize punch component
+        this.punchComponent = new PunchComponent(10, 40, 500); // 10 damage, 40 range, 500ms cooldown
+        this.addComponent(this.punchComponent);
 
         // Initialize states
         this.states = new Map<PlayerStateType, IPlayerState>();
@@ -422,6 +433,10 @@ export class Player extends ex.Actor {
         this.gameUI = gameUI;
     }
 
+    setPunchSystem(punchSystem: PunchSystem): void {
+        this.punchSystem = punchSystem;
+    }
+
     // Update ammo UI display
     private updateAmmoUI(): void {
         if (!this.equippedWeapon || !this.gameUI) return;
@@ -438,11 +453,15 @@ export class Player extends ex.Actor {
 
     // Shooting methods
     private onPointerDown(event: ex.PointerEvent): void {
-        // Only start shooting if we have a weapon equipped and ammo
+        // Handle shooting if we have a weapon equipped and ammo
         if (this.equippedWeapon && this.equippedWeapon.canShoot()) {
             this.isMousePressed = true;
             this.mouseTargetPos = event.worldPos;
             console.log(`Mouse pressed - Screen: (${event.screenPos.x}, ${event.screenPos.y}), World: (${event.worldPos.x}, ${event.worldPos.y})`);
+        }
+        // Handle punch if unarmed
+        else if (!this.equippedWeapon) {
+            this.punch();
         }
     }
 
@@ -621,6 +640,37 @@ export class Player extends ex.Actor {
         // Removed console.log for performance
     }
 
+    private punch(): void {
+        if (!this.punchSystem) {
+            console.warn('Punch system not available');
+            return;
+        }
+
+        // Get mouse direction for punch
+        const mousePos = this.mouseTargetPos || this.scene?.engine.input.pointers.primary.lastWorldPos;
+        let direction: ex.Vector;
+        
+        if (!mousePos) {
+            // Fallback to facing direction
+            direction = this.isFacingRight ? ex.vec(1, 0) : ex.vec(-1, 0);
+        } else {
+            // Calculate direction from player to mouse
+            direction = mousePos.sub(this.pos);
+            if (direction.magnitude < 10) {
+                // If mouse is too close, use facing direction
+                direction = this.isFacingRight ? ex.vec(1, 0) : ex.vec(-1, 0);
+            }
+        }
+
+        // Show visual feedback and execute punch
+        this.punchSystem.showPunchArea(this, direction);
+        const hitEntities = this.punchSystem.executePunch(this, direction);
+        
+        if (hitEntities.length > 0) {
+            console.log(`Punch hit ${hitEntities.length} enemy(ies)`);
+        }
+    }
+
     getEquippedWeapon(): Weapon | undefined {
         return this.equippedWeapon;
     }
@@ -633,6 +683,11 @@ export class Player extends ex.Actor {
     // Ammo methods
     getAmmoComponent(): AmmoComponent {
         return this.ammoComponent;
+    }
+
+    // Punch methods
+    getPunchComponent(): PunchComponent {
+        return this.punchComponent;
     }
 
     takeDamage(amount: number): boolean {

@@ -30,6 +30,11 @@ export const Resources = {
   Ammo3: new ImageSource('./images/guns/Amo3.png'),
   Ammo4: new ImageSource('./images/guns/Amo4.png'),
 
+  // Punch sprites
+  PunchSprite1: new ImageSource('./images/punch/FX046_01.png'),
+  PunchSprite2: new ImageSource('./images/punch/FX046_02.png'),
+  PunchSprite3: new ImageSource('./images/punch/FX046_03.png'),
+
   // Fonts
   DeterminationFont: new FontSource('./web/determination.ttf', 'Determination'),
 

@@ -12,6 +12,7 @@ import { InteractionSystem } from "../systems/interaction-system";
 import { BulletSystem } from "../systems/bullet-system";
 import { DamageNumberSystem } from "../systems/damage-number-system";
 import { HealthSystem } from "../systems/health-system";
+import { PunchSystem } from "../systems/punch-system";
 import { LevelRoundsConfig, RoundManager } from "../lib/rounds";
 
 export class MyLevel extends ex.Scene {
@@ -26,6 +27,8 @@ export class MyLevel extends ex.Scene {
         this.world.add(new BulletSystem(this.world));
         this.world.add(new DamageNumberSystem(this.world));
         this.world.add(new HealthSystem(this.world));
+        const punchSystem = new PunchSystem(this.world);
+        this.world.add(punchSystem);
         
         // Create player instance
         this.player = new Player();
@@ -37,6 +40,9 @@ export class MyLevel extends ex.Scene {
         
         // Connect player to UI
         this.player.setGameUI(this.gameUI);
+        
+        // Connect player to punch system
+        this.player.setPunchSystem(punchSystem);
         
         
         // Create and add debug manager
@@ -243,8 +249,8 @@ export class MyLevel extends ex.Scene {
             ]
         };
 
-        // Initialize round manager
-        this.roundManager = new RoundManager(this, this.player, roundsConfig);
+        // Initialize round manager with punch system
+        this.roundManager = new RoundManager(this, this.player, roundsConfig, punchSystem);
 
         // Example of listening to round events
         this.on("roundStart", (e: any) => {

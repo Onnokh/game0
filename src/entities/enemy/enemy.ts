@@ -8,6 +8,7 @@ import { AIActor } from '../ai-actor';
 import { SpriteFactory } from '../../sprites/sprite-factory';
 import { enemyGroup } from '../../lib/collision-groups';
 import { HealthComponent } from '../../components/health-component';
+import { PunchComponent } from '../../components/punch-component';
 
 export class Enemy extends AIActor {
   private player: Player | null = null;
@@ -16,6 +17,10 @@ export class Enemy extends AIActor {
   
   // Health
   private healthComponent: HealthComponent;
+  
+  // Punch
+  private punchComponent: PunchComponent;
+  private punchSystem?: any; // Will be set by the level
   
   // State Machine
   private currentState: IEnemyState;
@@ -53,6 +58,11 @@ export class Enemy extends AIActor {
 
     // Initialize health component
     this.healthComponent = new HealthComponent(150);
+    this.addComponent(this.healthComponent);
+    
+    // Initialize punch component
+    this.punchComponent = new PunchComponent(15, 35, 800); // 15 damage, 35 range, 800ms cooldown
+    this.addComponent(this.punchComponent);
 
     // Store spawn position for wander range
     this.spawnPosition = new ex.Vector(x, y);
@@ -217,6 +227,14 @@ export class Enemy extends AIActor {
 
   getHealthComponent(): HealthComponent {
     return this.healthComponent;
+  }
+
+  getPunchComponent(): PunchComponent {
+    return this.punchComponent;
+  }
+
+  setPunchSystem(punchSystem: any): void {
+    this.punchSystem = punchSystem;
   }
 
   getLife(): number {

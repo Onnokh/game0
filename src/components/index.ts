@@ -4,4 +4,5 @@ export { InteractableComponent } from './interactable-component';
 export { BulletComponent } from './bullet-component';
 export { HealthComponent } from './health-component';
 export { AmmoComponent } from './ammo-component';
+export { PunchComponent } from './punch-component';
 

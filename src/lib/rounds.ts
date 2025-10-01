@@ -41,8 +41,9 @@ export class RoundManager {
     private aliveEnemies = new Set<Enemy>();
     private activeTimers: ex.Timer[] = [];
     private isSpawning = false;
+    private punchSystem?: any;
 
-    constructor(scene: ex.Scene, player: Player, config: LevelRoundsConfig) {
+    constructor(scene: ex.Scene, player: Player, config: LevelRoundsConfig, punchSystem?: any) {
         this.scene = scene;
         this.player = player;
         this.config = {
@@ -50,6 +51,7 @@ export class RoundManager {
             interRoundDelayMs: 1000,
             ...config
         };
+        this.punchSystem = punchSystem;
     }
 
     getCurrentRoundNumber(): number {
@@ -180,14 +182,24 @@ export class RoundManager {
 
     private createEnemy(type: EnemyType, pos: ex.Vector): Enemy {
         // Placeholder switch for future enemy types
+        let enemy: Enemy;
         switch (type) {
             case "skeleton":
                 // TODO: replace with specific skeleton class when implemented
-                return new Enemy(pos.x, pos.y);
+                enemy = new Enemy(pos.x, pos.y);
+                break;
             case "default":
             default:
-                return new Enemy(pos.x, pos.y);
+                enemy = new Enemy(pos.x, pos.y);
+                break;
         }
+        
+        // Connect punch system if available
+        if (this.punchSystem) {
+            enemy.setPunchSystem(this.punchSystem);
+        }
+        
+        return enemy;
     }
 
     private checkRoundCompletion(trackers: TrackedSpawnState[]): void {

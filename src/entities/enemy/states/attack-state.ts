@@ -35,7 +35,23 @@ export class AttackState implements IEnemyState {
   }
 
   private performAttack(enemy: Enemy, player: Player): void {
-    player.takeDamage(10);
+    // Use punch system if available
+    const punchSystem = (enemy as any).punchSystem;
+    if (punchSystem) {
+      // Calculate direction from enemy to player
+      const direction = player.pos.sub(enemy.pos);
+      
+      // Show punch visual and execute punch
+      punchSystem.showPunchArea(enemy, direction);
+      const hitEntities = punchSystem.executePunch(enemy, direction);
+      
+      if (hitEntities.length > 0) {
+        console.log(`Enemy punch hit ${hitEntities.length} target(s)`);
+      }
+    } else {
+      // Fallback to direct damage if punch system not available
+      player.takeDamage(10);
+    }
   }
 
   exit(enemy: Enemy): void {
