@@ -31,7 +31,6 @@ export class Player extends ex.Actor {
     private mouseTargetPos?: ex.Vector;
     
     // Dodge roll properties
-    private isDodgeRolling = false;
     private dodgeRollSpeed = 300; // pixels per second during dodge roll
     private dodgeRollDuration = 450; // milliseconds - longer to see animation
     private dodgeRollCooldown = 1000; // milliseconds
@@ -293,13 +292,8 @@ export class Player extends ex.Actor {
         }
 
         // Dodge roll is available
-        this.isDodgeRolling = true;
         this.lastDodgeRollTime = currentTime;
         return true;
-    }
-
-    setIsDodgeRolling(isDodgeRolling: boolean): void {
-        this.isDodgeRolling = isDodgeRolling;
     }
 
     setDodgeDirection(direction: ex.Vector): void {

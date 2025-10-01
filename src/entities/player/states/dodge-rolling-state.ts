@@ -72,7 +72,6 @@ export class DodgeRollingState implements IPlayerState {
   exit(player: Player): void {
     // Stop movement
     player.vel = ex.Vector.Zero;
-    player.setIsDodgeRolling(false);
     
     // Stop emitting particles
     const particles = player.getDodgeRollParticles();
