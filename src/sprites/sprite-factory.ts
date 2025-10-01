@@ -5,13 +5,35 @@ export class SpriteFactory {
   // Factory methods for creating sprites and animations
   
   static createPlayerIdleSprite(): ex.Sprite {
-    // Create sprite from idle.png
-    return Resources.IdleSprite.toSprite();
+    // Create sprite from new animation sheet (row 0, col 0 = idle)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    const sprite = characterSheet.getSprite(0, 0);
+    sprite.scale = ex.vec(2, 2); // Double the size
+    return sprite;
   }
 
   static createPlayerWalkSprite(): ex.Sprite {
-    // Create sprite from walk.png  
-    return Resources.WalkSprite.toSprite();
+    // Create sprite from new animation sheet (row 1, col 0 = walk)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    const sprite = characterSheet.getSprite(0, 1);
+    sprite.scale = ex.vec(2, 2); // Double the size
+    return sprite;
   }
 
   static createSimpleAnimation(
@@ -39,22 +61,21 @@ export class SpriteFactory {
 
   // Character animations
   static createPlayerIdleAnimation(): ex.Animation {
-    // Create idle animation from idle.png sprite sheet (3 rows, 4 columns)
-    // Middle row (row 1) = front idle
-    const idleSpriteSheet = ex.SpriteSheet.fromImageSource({
-      image: Resources.IdleSprite,
+    // Create idle animation from new animation sheet (row 0, cols 0-1 = idle)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
       grid: {
-        rows: 3,
-        columns: 4,
-        spriteWidth: 80,
-        spriteHeight: 80
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
       }
     });
     
-    // Create animation from only the middle row (4 frames for front idle)
+    // Create animation from row 0, columns 0-1 (2 frames for idle)
     const frames = [];
-    for (let col = 0; col < 4; col++) {
-      const sprite = idleSpriteSheet.getSprite(col, 1);
+    for (let col = 0; col < 2; col++) {
+      const sprite = characterSheet.getSprite(col, 0);
       sprite.scale = ex.vec(2, 2); // Double the size
       frames.push({ graphic: sprite, duration: 400 });
     }
@@ -66,22 +87,21 @@ export class SpriteFactory {
   }
 
   static createPlayerWalkAnimation(): ex.Animation {
-    // Create walk animation from walk.png sprite sheet (640x240, 3 rows, 8 cols)
-    // Top row (row 0) = sides (left/right movement)
-    const walkSpriteSheet = ex.SpriteSheet.fromImageSource({
-      image: Resources.WalkSprite,
+    // Create walk animation from new animation sheet (row 1, cols 0-3 = walk)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
       grid: {
-        rows: 3,
+        rows: 6,
         columns: 8,
-        spriteWidth: 80,
-        spriteHeight: 80
+        spriteWidth: 24,
+        spriteHeight: 24
       }
     });
     
-    // Create animation from only the top row (8 frames for sides movement)
+    // Create animation from row 1, columns 0-3 (4 frames for walk)
     const frames = [];
-    for (let col = 0; col < 8; col++) {
-      const sprite = walkSpriteSheet.getSprite(col, 0);
+    for (let col = 0; col < 4; col++) {
+      const sprite = characterSheet.getSprite(col, 1);
       sprite.scale = ex.vec(2, 2); // Double the size
       frames.push({ graphic: sprite, duration: 120 });
     }
@@ -93,22 +113,21 @@ export class SpriteFactory {
   }
 
   static createPlayerSprintAnimation(): ex.Animation {
-    // Create sprint animation from run.png sprite sheet (3 rows, 8 columns)
-    // Top row (row 0) = sides (left/right sprint)
-    const runSpriteSheet = ex.SpriteSheet.fromImageSource({
-      image: Resources.RunSprite,
+    // Create sprint animation from new animation sheet (row 1, cols 4-7 = run)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
       grid: {
-        rows: 3,
+        rows: 6,
         columns: 8,
-        spriteWidth: 80,
-        spriteHeight: 80
+        spriteWidth: 24,
+        spriteHeight: 24
       }
     });
     
-    // Create animation from only the top row (8 frames for sides sprint)
+    // Create animation from row 1, columns 4-7 (4 frames for run)
     const frames = [];
-    for (let col = 0; col < 8; col++) {
-      const sprite = runSpriteSheet.getSprite(col, 0);
+    for (let col = 4; col < 8; col++) {
+      const sprite = characterSheet.getSprite(col, 1);
       sprite.scale = ex.vec(2, 2); // Double the size
       frames.push({ graphic: sprite, duration: 80 }); // Faster frames for sprint
     }
@@ -120,21 +139,21 @@ export class SpriteFactory {
   }
 
   static createPlayerJumpAnimation(): ex.Animation {
-    // Create jump animation from jump.png sprite sheet (480x240 = 6x3 grid)
-    const jumpSpriteSheet = ex.SpriteSheet.fromImageSource({
-      image: Resources.JumpSprite,
+    // Create jump animation from new animation sheet (row 3, cols 0-3 = jump)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
       grid: {
-        rows: 3,
-        columns: 6, // 480/80 = 6 columns
-        spriteWidth: 80,
-        spriteHeight: 80
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
       }
     });
     
-    // Create animation from top row (sides jump)
+    // Create animation from row 3, columns 0-3 (4 frames for jump)
     const frames = [];
-    for (let col = 0; col < 6; col++) { // Use all 6 frames
-      const sprite = jumpSpriteSheet.getSprite(col, 0);
+    for (let col = 0; col < 4; col++) {
+      const sprite = characterSheet.getSprite(col, 3);
       sprite.scale = ex.vec(2, 2); // Double the size
       frames.push({ graphic: sprite, duration: 200 }); // Much slower to see the animation clearly
     }
@@ -146,24 +165,26 @@ export class SpriteFactory {
   }
 
   static createPlayerDodgeRollAnimation(): ex.Animation {
-    // Create dodge roll animation from jump.png sprite sheet (top row, 6 frames)
-    const jumpSpriteSheet = ex.SpriteSheet.fromImageSource({
-      image: Resources.JumpSprite,
+    // Create dodge roll animation from new animation sheet (row 5, cols 0-1 = sit for dodge roll)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
       grid: {
-        rows: 3,
-        columns: 6,
-        spriteWidth: 80,
-        spriteHeight: 80
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
       }
     });
     
-    // Create animation from top row (6 frames for dodge roll)
+    // Create animation from row 5, columns 0-1 (2 frames for sit/dodge roll)
     const frames = [];
-    for (let col = 0; col < 6; col++) {
-      const sprite = jumpSpriteSheet.getSprite(col, 0);
-      sprite.scale = ex.vec(2, 2); // Double the size
-      frames.push({ graphic: sprite, duration: 75 }); // 200ms * 6 frames = 1200ms (matches dodgeRollDuration)
-    }
+    const sprite1 = characterSheet.getSprite(0, 5);
+    sprite1.scale = ex.vec(2, 2); // Double the size
+    frames.push({ graphic: sprite1, duration: 80 }); // First frame: fast like running/walking
+    
+    const sprite2 = characterSheet.getSprite(1, 5);
+    sprite2.scale = ex.vec(2, 2); // Double the size
+    frames.push({ graphic: sprite2, duration: 370 }); // Second frame: longer duration (80 + 370 = 450ms total)
     
     return new ex.Animation({
       frames: frames,
@@ -245,6 +266,111 @@ export class SpriteFactory {
       const sprite = skeletonSpriteSheet.getSprite(col, 6); // Row index 6 = Row 7
       sprite.scale = ex.vec(2, 2); // Scale up 2x like other sprites
       frames.push({ graphic: sprite, duration: 250 });
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.End // Play once and stop on last frame
+    });
+  }
+
+  // Additional animations from the new spritesheet
+  static createPlayerKickAnimation(): ex.Animation {
+    // Create kick animation from new animation sheet (row 0, cols 2-3 = kick)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    
+    // Create animation from row 0, columns 2-3 (2 frames for kick)
+    const frames = [];
+    for (let col = 2; col < 4; col++) {
+      const sprite = characterSheet.getSprite(col, 0);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 80 });
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Freeze // Play once and freeze on last frame
+    });
+  }
+
+  static createPlayerAttackAnimation(): ex.Animation {
+    // Create attack animation from new animation sheet (row 0, cols 4-5 = attack)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    
+    // Create animation from row 0, columns 4-5 (2 frames for attack)
+    const frames = [];
+    for (let col = 4; col < 6; col++) {
+      const sprite = characterSheet.getSprite(col, 0);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 150 });
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Freeze // Play once and freeze on last frame
+    });
+  }
+
+  static createPlayerDamageAnimation(): ex.Animation {
+    // Create damage animation from new animation sheet (row 0, cols 6-7 = damage)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    
+    // Create animation from row 0, columns 6-7 (2 frames for damage)
+    const frames = [];
+    for (let col = 6; col < 8; col++) {
+      const sprite = characterSheet.getSprite(col, 0);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 80 }); // 80ms per frame = 160ms total
+    }
+    
+    return new ex.Animation({
+      frames: frames,
+      strategy: ex.AnimationStrategy.Freeze
+    });
+  }
+
+  static createPlayerDeathAnimation(): ex.Animation {
+    // Create death animation from new animation sheet (row 4, cols 4-7 = die)
+    const characterSheet = ex.SpriteSheet.fromImageSource({
+      image: Resources.CharacterAnimationSheet,
+      grid: {
+        rows: 6,
+        columns: 8,
+        spriteWidth: 24,
+        spriteHeight: 24
+      }
+    });
+    
+    // Create animation from row 4, columns 4-7 (4 frames for death)
+    const frames = [];
+    for (let col = 4; col < 8; col++) {
+      const sprite = characterSheet.getSprite(col, 4);
+      sprite.scale = ex.vec(2, 2); // Double the size
+      frames.push({ graphic: sprite, duration: 300 });
     }
     
     return new ex.Animation({

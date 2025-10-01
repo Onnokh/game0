@@ -134,7 +134,7 @@ export class PunchSystem extends ex.System {
     ];
 
     const punchAnimation = new ex.Animation({
-      frames: allSprites.map(sprite => ({ graphic: sprite, duration: 50 })),
+      frames: allSprites.map(sprite => ({ graphic: sprite, duration: 80 })),
       strategy: ex.AnimationStrategy.Freeze
     });
     
@@ -144,9 +144,9 @@ export class PunchSystem extends ex.System {
     // Add as child of puncher so it follows movement
     puncher.addChild(punchArea);
     
-    // Remove after animation completes (150ms)
+    // Remove after animation completes (240ms = 3 frames * 80ms)
     setTimeout(() => {
       punchArea.kill();
-    }, 150);
+    }, 240);
   }
 }

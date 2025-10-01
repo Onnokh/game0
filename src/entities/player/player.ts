@@ -20,6 +20,10 @@ export class Player extends ex.Actor {
     private sprintAnimation!: ex.Animation;
     private jumpAnimation!: ex.Animation;
     private dodgeRollAnimation!: ex.Animation;
+    private kickAnimation!: ex.Animation;
+    private damageAnimation!: ex.Animation;
+    private isPunching = false;
+    private isTakingDamage = false;
     private dodgeRollParticles!: ex.ParticleEmitter;
     private walkParticles!: ex.ParticleEmitter;
     private gameUI?: GameUI;
@@ -103,6 +107,8 @@ export class Player extends ex.Actor {
         this.sprintAnimation = SpriteFactory.createPlayerSprintAnimation();
         this.jumpAnimation = SpriteFactory.createPlayerJumpAnimation();
         this.dodgeRollAnimation = SpriteFactory.createPlayerDodgeRollAnimation();
+        this.kickAnimation = SpriteFactory.createPlayerKickAnimation();
+        this.damageAnimation = SpriteFactory.createPlayerDamageAnimation();
         
         // Create dodge roll particle emitter
         this.dodgeRollParticles = new ex.ParticleEmitter({
@@ -260,6 +266,12 @@ export class Player extends ex.Actor {
     // Public methods for states to access
 
     setAnimation(animationName: string): void {
+        // Don't override kick or damage animation while they're playing
+        if ((this.isPunching && animationName !== 'kick') || 
+            (this.isTakingDamage && animationName !== 'damage')) {
+            return;
+        }
+
         let targetAnimation;
         switch (animationName) {
             case 'idle':
@@ -277,6 +289,14 @@ export class Player extends ex.Actor {
             case 'dodgeroll':
                 targetAnimation = this.dodgeRollAnimation;
                 break;
+            case 'kick':
+                targetAnimation = this.kickAnimation;
+                this.isPunching = true; // Set punching flag when kick starts
+                break;
+            case 'damage':
+                targetAnimation = this.damageAnimation;
+                this.isTakingDamage = true; // Set damage flag when damage starts
+                break;
             default:
                 return;
         }
@@ -288,6 +308,22 @@ export class Player extends ex.Actor {
 
     setFacingRight(facingRight: boolean): void {
         this.isFacingRight = facingRight;
+    }
+
+    /**
+     * Trigger damage animation and return to previous animation
+     */
+    playDamageAnimation(): void {
+        this.setAnimation('damage');
+        this.actions.clearActions();
+        this.actions.flash(ex.Color.Red, 160);
+        
+        ex.coroutine(this.scene!.engine, function* (this: Player) {
+            yield 160; // Wait for damage animation duration (2 frames * 80ms = 160ms)
+            this.isTakingDamage = false; // Clear damage flag
+            
+            this.setAnimation('idle');
+        }.bind(this));
     }
 
     getWalkSpeed(): number {
@@ -646,6 +682,9 @@ export class Player extends ex.Actor {
             return;
         }
 
+        // Remember current animation to return to after punch
+        const currentAnimation = this.graphics.current;
+        
         // Get mouse direction for punch
         const mousePos = this.mouseTargetPos || this.scene?.engine.input.pointers.primary.lastWorldPos;
         let direction: ex.Vector;
@@ -661,6 +700,18 @@ export class Player extends ex.Actor {
                 direction = this.isFacingRight ? ex.vec(1, 0) : ex.vec(-1, 0);
             }
         }
+
+        // Set kick animation
+        this.setAnimation('kick');
+        
+        // Return to previous animation after kick completes
+        ex.coroutine(this.scene!.engine, function* (this: Player) {
+            yield 160; // Wait for kick animation duration (2 frames * 80ms)
+            this.isPunching = false; // Clear punching flag
+            if (currentAnimation) {
+                this.graphics.use(currentAnimation); // Return to previous animation
+            }
+        }.bind(this));
 
         // Show visual feedback and execute punch
         this.punchSystem.showPunchArea(this, direction);
@@ -692,6 +743,11 @@ export class Player extends ex.Actor {
 
     takeDamage(amount: number): boolean {
         const died = this.healthComponent.takeDamage(amount);
+        
+        // Play damage animation if not dead and not already taking damage
+        if (!died && !this.isTakingDamage) {
+            this.playDamageAnimation();
+        }
         
         // Update UI if available
         if (this.gameUI) {

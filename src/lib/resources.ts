@@ -1,11 +1,8 @@
 import { ImageSource, DefaultLoader, FontSource } from "excalibur";
 
 export const Resources = {
-  // Character sprites - separate idle, walk, run, and jump animations
-  IdleSprite: new ImageSource('./images/character/idle.png'),
-  WalkSprite: new ImageSource('./images/character/walk.png'),
-  RunSprite: new ImageSource('./images/character/run.png'),
-  JumpSprite: new ImageSource('./images/character/jump.png'),
+  // Character sprites - new unified animation sheet
+  CharacterAnimationSheet: new ImageSource('./images/character/new/AnimationSheet.png'),
   
   // Enemy sprites
   SkeletonSprite: new ImageSource('./images/enemies/skeleton/Skeleton.png'),
