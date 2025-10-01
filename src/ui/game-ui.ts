@@ -1,5 +1,6 @@
 import * as ex from 'excalibur';
 import { Resources } from '../lib/resources';
+import { HealthBar } from './health-bar';
 
 export class GameUI extends ex.ScreenElement {
   private weaponLabel!: ex.Label;
@@ -8,6 +9,7 @@ export class GameUI extends ex.ScreenElement {
   private roundLabel!: ex.Label;
   private enemiesLabel!: ex.Label;
   private fpsLabel!: ex.Label;
+  private healthBar!: HealthBar;
   private fps: number = 0;
   private frameCount: number = 0;
   private fpsUpdateTimer: number = 0;
@@ -100,6 +102,10 @@ export class GameUI extends ex.ScreenElement {
       })
     });
     this.addChild(this.fpsLabel);
+
+    // Create health bar
+    this.healthBar = new HealthBar();
+    this.addChild(this.healthBar);
   }
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
@@ -110,6 +116,10 @@ export class GameUI extends ex.ScreenElement {
 
   updateAmmoCount(current: number, max: number): void {
     this.ammoLabel.text = `Ammo: ${current}/${max}`;
+  }
+
+  updateHealth(current: number, max: number): void {
+    this.healthBar.updateHealth(current, max);
   }
 
   addToScene(scene: ex.Scene): void {

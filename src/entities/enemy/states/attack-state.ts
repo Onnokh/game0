@@ -35,8 +35,7 @@ export class AttackState implements IEnemyState {
   }
 
   private performAttack(enemy: Enemy, player: Player): void {
-    console.log('Enemy attacks!');
-    // Add attack logic here (damage, effects, etc.)
+    player.takeDamage(10);
   }
 
   exit(enemy: Enemy): void {

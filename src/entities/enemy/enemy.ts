@@ -6,8 +6,8 @@ import { ChaseState } from './states/chase-state';
 import { AttackState } from './states/attack-state';
 import { AIActor } from '../ai-actor';
 import { SpriteFactory } from '../../sprites/sprite-factory';
-import { DamageNumber } from '../damage-number';
 import { enemyGroup } from '../../lib/collision-groups';
+import { HealthComponent } from '../../components/health-component';
 
 export class Enemy extends AIActor {
   private player: Player | null = null;
@@ -15,8 +15,7 @@ export class Enemy extends AIActor {
   private idleSpeed = 50;
   
   // Health
-  private life = 500;
-  private maxLife = 500;
+  private healthComponent: HealthComponent;
   
   // State Machine
   private currentState: IEnemyState;
@@ -51,6 +50,9 @@ export class Enemy extends AIActor {
       collisionType: ex.CollisionType.Active,
       collisionGroup: enemyGroup,
     });
+
+    // Initialize health component
+    this.healthComponent = new HealthComponent(500);
 
     // Store spawn position for wander range
     this.spawnPosition = new ex.Vector(x, y);
@@ -213,25 +215,29 @@ export class Enemy extends AIActor {
     return this.moveSpeed;
   }
 
+  getHealthComponent(): HealthComponent {
+    return this.healthComponent;
+  }
+
   getLife(): number {
-    return this.life;
+    return this.healthComponent.currentHealth;
   }
 
   getMaxLife(): number {
-    return this.maxLife;
+    return this.healthComponent.maxHealth;
   }
 
   takeDamage(damage: number, isCritical: boolean = false): void {
     // Don't take damage if already dying
     if (this.isDying) return;
     
-    // Apply damage immediately for health calculation
-    this.life = Math.max(0, this.life - damage);
+    // Use health component to take damage
+    const died = this.healthComponent.takeDamage(damage);
     
     // Flag health bar for redraw only when health changes
     this.healthBarCanvas.flagDirty();
     
-    if (this.life <= 0) {
+    if (died) {
       this.playDeathAnimation();
     }
   }
@@ -264,7 +270,8 @@ export class Enemy extends AIActor {
   }
 
   heal(amount: number): void {
-    this.life = Math.min(this.maxLife, this.life + amount);
+    this.healthComponent.heal(amount);
+    this.healthBarCanvas.flagDirty();
   }
 
   override onPostUpdate(engine: ex.Engine, delta: number): void {
@@ -330,8 +337,8 @@ export class Enemy extends AIActor {
     ctx.fillStyle = '#333333';
     ctx.fillRect(0, 0, barWidth, barHeight);
     
-    // Calculate health percentage and width
-    const healthPercentage = this.life / this.maxLife;
+    // Calculate health percentage and width using health component
+    const healthPercentage = this.healthComponent.getHealthPercentage();
     const healthWidth = barWidth * healthPercentage;
     
     // Color interpolation: red at low health, green at high health

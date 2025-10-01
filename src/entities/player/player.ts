@@ -3,7 +3,7 @@ import {SpriteFactory} from '../../sprites/sprite-factory';
 import {GameUI} from '../../ui/game-ui';
 import {Bullet} from '../bullet';
 import {Weapon} from '../weapon';
-import { WeaponStatsComponent } from '../../components';
+import { WeaponStatsComponent, HealthComponent } from '../../components';
 import { playerGroup } from '../../lib/collision-groups';
 import { IPlayerState, PlayerStateType } from './states/player-state';
 import { IdleState } from './states/idle-state';
@@ -45,6 +45,9 @@ export class Player extends ex.Actor {
     // Jump properties
     private isJumping = false;
 
+    // Health properties
+    private healthComponent: HealthComponent;
+
     // State Machine
     private currentState: IPlayerState;
     private states: Map<PlayerStateType, IPlayerState>;
@@ -59,6 +62,9 @@ export class Player extends ex.Actor {
             collisionType: ex.CollisionType.Active, // Enable collision for the player
             collisionGroup: playerGroup,
         });
+
+        // Initialize health component
+        this.healthComponent = new HealthComponent(100);
 
         // Initialize states
         this.states = new Map<PlayerStateType, IPlayerState>();
@@ -180,6 +186,7 @@ export class Player extends ex.Actor {
         if (input.wasPressed(ex.Keys.KeyQ) && this.equippedWeapon) {
             this.dropWeapon();
         }
+
 
         // Apply existing recoil velocity BEFORE state update
         // States will blend this with intended movement
@@ -500,6 +507,35 @@ export class Player extends ex.Actor {
 
     getEquippedWeapon(): Weapon | undefined {
         return this.equippedWeapon;
+    }
+
+    // Health methods
+    getHealthComponent(): HealthComponent {
+        return this.healthComponent;
+    }
+
+    takeDamage(amount: number): boolean {
+        const died = this.healthComponent.takeDamage(amount);
+        
+        // Update UI if available
+        if (this.gameUI) {
+            this.gameUI.updateHealth(this.healthComponent.currentHealth, this.healthComponent.maxHealth);
+        }
+        
+        return died;
+    }
+
+    heal(amount: number): void {
+        this.healthComponent.heal(amount);
+        
+        // Update UI if available
+        if (this.gameUI) {
+            this.gameUI.updateHealth(this.healthComponent.currentHealth, this.healthComponent.maxHealth);
+        }
+    }
+
+    isAlive(): boolean {
+        return this.healthComponent.isAlive();
     }
 
     private reload(): void {

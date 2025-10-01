@@ -6,10 +6,11 @@ import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
 import { Weapon } from "../entities/weapon";
-import { WeaponStatsComponent, WeaponType } from "../components/weapon-stats-component";
+import { WeaponType } from "../components/weapon-stats-component";
 import { InteractionSystem } from "../systems/interaction-system";
 import { BulletSystem } from "../systems/bullet-system";
 import { DamageNumberSystem } from "../systems/damage-number-system";
+import { HealthSystem } from "../systems/health-system";
 import { LevelRoundsConfig, RoundManager } from "../lib/rounds";
 
 export class MyLevel extends ex.Scene {
@@ -23,6 +24,7 @@ export class MyLevel extends ex.Scene {
         this.world.add(new InteractionSystem(this.world));
         this.world.add(new BulletSystem(this.world));
         this.world.add(new DamageNumberSystem(this.world));
+        this.world.add(new HealthSystem(this.world));
         
         // Create player instance
         this.player = new Player();
