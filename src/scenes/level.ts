@@ -37,6 +37,7 @@ export class MyLevel extends ex.Scene {
         // Connect player to UI
         this.player.setGameUI(this.gameUI);
         
+        
         // Create and add debug manager
         this.debugManager = new DebugManager();
         this.debugManager.setPlayer(this.player);
@@ -205,14 +206,12 @@ export class MyLevel extends ex.Scene {
         // Add all rocks to the scene
         rocks.forEach(rock => this.add(rock));
         
-        // Add weapons with types - showcase all weapon types with different sprites
+        // Add other weapons with types - showcase all weapon types with different sprites
         const ak47 = new Weapon(200, 1104, WeaponType.AssaultRifle);
         const shotgun = new Weapon(350, 1104, WeaponType.Shotgun);
-        const pistol = new Weapon(500, 1104, WeaponType.Pistol);
         const smg = new Weapon(650, 1104, WeaponType.SMG);
         this.add(ak47);
         this.add(shotgun);
-        this.add(pistol);
         this.add(smg);
         
         // Rounds configuration placeholder
@@ -265,6 +264,7 @@ export class MyLevel extends ex.Scene {
         });
         this.add(startTimer);
         startTimer.start();
+        
     }
 
     override onPreLoad(loader: ex.DefaultLoader): void {
@@ -274,6 +274,10 @@ export class MyLevel extends ex.Scene {
     override onActivate(context: ex.SceneActivationContext<unknown>): void {
         // Called when Excalibur transitions to this scene
         // Only 1 scene is active at a time
+        
+        // Give player a starting pistol (after scene is fully activated and UI is ready)
+        const startingPistol = new Weapon(0, 0, WeaponType.Pistol);
+        this.player.equipWeapon(startingPistol);
     }
 
     override onPreUpdate(engine: ex.Engine, delta: number): void {

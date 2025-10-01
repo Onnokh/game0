@@ -109,17 +109,25 @@ export class GameUI extends ex.ScreenElement {
   }
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
-    this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
+    if (this.weaponLabel) {
+      this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
+    }
     // Show drop hint only when player has a weapon
-    this.dropHintLabel.graphics.isVisible = hasWeapon;
+    if (this.dropHintLabel) {
+      this.dropHintLabel.graphics.isVisible = hasWeapon;
+    }
   }
 
   updateAmmoCount(current: number, max: number): void {
-    this.ammoLabel.text = `Ammo: ${current}/${max}`;
+    if (this.ammoLabel) {
+      this.ammoLabel.text = `Ammo: ${current}/${max}`;
+    }
   }
 
   updateHealth(current: number, max: number): void {
-    this.healthBar.updateHealth(current, max);
+    if (this.healthBar) {
+      this.healthBar.updateHealth(current, max);
+    }
   }
 
   addToScene(scene: ex.Scene): void {

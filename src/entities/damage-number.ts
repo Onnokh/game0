@@ -8,7 +8,6 @@ export class DamageNumber extends ex.Actor {
     private damage: number;
     private damageColor: ex.Color;
     private isCritical: boolean = false;
-    private animationStartTime: number;
     private isAnimating: boolean = false;
     private growDuration = 150; // How long the grow animation takes
     private fadeStartTime: number;
@@ -28,7 +27,6 @@ export class DamageNumber extends ex.Actor {
         this.damageColor = color;
         this.isCritical = isCritical;
         this.startTime = Date.now();
-        this.animationStartTime = this.startTime + 300; // Start animation after 300ms grace period
         this.isAnimating = false;
         this.fadeStartTime = this.startTime + this.duration - 300; // Start fading 300ms before end
         this.hasGrown = false; // Reset grow state for new damage number
@@ -131,12 +129,11 @@ export class DamageNumber extends ex.Actor {
         // Update the text graphic
         this.createDamageText();
         
-        // Reset the timer to extend the duration
-        this.startTime = Date.now();
-        this.animationStartTime = this.startTime + 300; // Reset animation start time
-        this.fadeStartTime = this.startTime + this.duration - 300; // Reset fade start time
-        this.isAnimating = false; // Reset animation state
+        // Only reset the fade timing, not the grow animation timing
+        // This prevents the grow animation from restarting
+        this.fadeStartTime = Date.now() + this.duration - 300; // Reset fade start time
         
+        // Don't reset isAnimating - preserve current animation state
         // Don't reset hasGrown - keep the grown state
         // Don't reset scale and opacity - keep current state for smooth updates
         // Only reset opacity if it was fading out

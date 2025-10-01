@@ -52,7 +52,7 @@ export class Enemy extends AIActor {
     });
 
     // Initialize health component
-    this.healthComponent = new HealthComponent(500);
+    this.healthComponent = new HealthComponent(150);
 
     // Store spawn position for wander range
     this.spawnPosition = new ex.Vector(x, y);

@@ -139,7 +139,7 @@ export class DamageNumberManager {
   }
 
   private cleanupDeadEnemies(): void {
-    for (const [enemy, damageData] of this.enemyDamageData.entries()) {
+    for (const [enemy] of this.enemyDamageData.entries()) {
       if (enemy.isKilled()) {
         this.enemyDamageData.delete(enemy);
       }
