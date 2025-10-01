@@ -16,6 +16,7 @@ export const Resources = {
   
   // Decorations
   OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
+  OutdoorDecorFree: new ImageSource('./images/deco/Outdoor_Decor_Free.png'),
 
   // Weapons
   AssaultRifle: new ImageSource('./images/guns/Assaut-rifle-2.png'),

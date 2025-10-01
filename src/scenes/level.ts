@@ -1,6 +1,7 @@
 import * as ex from "excalibur";
 import { Player } from "../entities/player";
 import { OakTree } from "../entities/oak-tree";
+import { Rock } from "../entities/rock";
 import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
@@ -162,6 +163,42 @@ export class MyLevel extends ex.Scene {
         
         // Add all trees to the scene
         oakTrees.forEach(tree => this.add(tree));
+        
+        // Add rocks scattered across the map at specific coordinates
+        const rocks = [
+            // Upper area rocks
+            new Rock(80, 160, 0),
+            new Rock(240, 192, 1),
+            new Rock(432, 176, 0),
+            new Rock(608, 208, 1),
+            new Rock(720, 144, 0),
+            
+            // Middle area rocks
+            new Rock(112, 352, 1),
+            new Rock(288, 384, 0),
+            new Rock(464, 368, 1),
+            new Rock(640, 400, 0),
+            new Rock(752, 352, 1),
+            
+            // Lower middle area rocks
+            new Rock(144, 560, 0),
+            new Rock(336, 592, 1),
+            new Rock(512, 576, 0),
+            new Rock(688, 608, 1),
+            
+            // Bottom area rocks
+            new Rock(96, 752, 1),
+            new Rock(304, 784, 0),
+            new Rock(496, 768, 1),
+            new Rock(656, 800, 0),
+            new Rock(736, 752, 1),
+            
+            // Very bottom area rocks
+            new Rock(192, 928, 0),
+        ];
+        
+        // Add all rocks to the scene
+        rocks.forEach(rock => this.add(rock));
         
         // Add weapons with types - showcase all weapon types with different sprites
         const ak47 = new Weapon(200, 1104, WeaponType.AssaultRifle);
