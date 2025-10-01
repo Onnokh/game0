@@ -28,6 +28,7 @@ export class InteractionSystem extends ex.System {
     if (!player) return;
 
     const engine = this.scene.engine;
+    let interactionTriggered = false;
 
     // Check each interactable entity
     for (const entity of this.interactableQuery.entities) {
@@ -54,9 +55,10 @@ export class InteractionSystem extends ex.System {
         }
       }
 
-      // Check for interaction input
-      if (isNearby && engine.input.keyboard.wasPressed(interactable.interactKey)) {
+      // Check for interaction input - only allow one interaction per key press
+      if (!interactionTriggered && isNearby && engine.input.keyboard.wasPressed(interactable.interactKey)) {
         interactable.interact(player);
+        interactionTriggered = true; // Consume the key press
       }
     }
   }

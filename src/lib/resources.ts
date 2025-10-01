@@ -18,7 +18,10 @@ export const Resources = {
   OakTree: new ImageSource('./images/deco/Oak_Tree.png'),
 
   // Weapons
-  Shotgun: new ImageSource('./images/guns/Shotguns/2Shotgun02.png'),
+  AssaultRifle: new ImageSource('./images/guns/Assaut-rifle-2.png'),
+  Shotgun: new ImageSource('./images/guns/Shotgun-2.png'),
+  Pistol: new ImageSource('./images/guns/Pistol-3.png'),
+  SMG: new ImageSource('./images/guns/SMG-4.png'),
 
   // Fonts
   DeterminationFont: new FontSource('./web/determination.ttf', 'Determination'),

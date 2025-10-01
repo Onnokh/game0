@@ -1,12 +1,12 @@
 import * as ex from 'excalibur';
 import { Resources } from '../lib/resources';
-import { WeaponStatsComponent } from '../components/weapon-stats-component';
+import { WeaponStatsComponent, WeaponType } from '../components/weapon-stats-component';
 import { InteractableComponent } from '../components/interactable-component';
 
 export class Weapon extends ex.Actor {
   private pickupLabel!: ex.Label;
 
-  constructor(x: number, y: number, name: string = "Shotgun", damage: number = 25, firerate: number = 3, magazine_size: number = 30) {
+  constructor(x: number, y: number, type: WeaponType) {
     super({
       pos: new ex.Vector(x, y),
       width: 32,  // Smaller size to match sprite
@@ -15,16 +15,16 @@ export class Weapon extends ex.Actor {
       anchor: ex.vec(0.5, 0.5) // Center the actor
     });
     
-    // Add weapon stats component
-    this.addComponent(new WeaponStatsComponent(name, damage, firerate, magazine_size));
+    // Add weapon stats component with type
+    this.addComponent(new WeaponStatsComponent(type));
     this.addComponent(new InteractableComponent(
       ex.Keys.KeyE,
       50, // interact radius
       (interactor) => this.pickupWeapon(interactor)
     ));
     
-    this.tags.add('pickup');
-    console.log(`Weapon constructor: ${name} at (${x}, ${y}), damage: ${damage}, firerate: ${firerate}, magazine: ${magazine_size}`);
+    const stats = this.get(WeaponStatsComponent)!;
+    console.log(`Weapon constructor: ${stats.name} (${type}) at (${x}, ${y}), damage: ${stats.damage}, firerate: ${stats.firerate}, magazine: ${stats.magazineSize}, bullets: ${stats.bulletCount}, spread: ${stats.spreadAngle}`);
   }
 
   // Getters for weapon stats (delegates to component)
@@ -62,7 +62,10 @@ export class Weapon extends ex.Actor {
   }
 
   override onInitialize(): void {
-    const gunSprite = Resources.Shotgun.toSprite();
+    // Get the sprite from the weapon stats component
+    const weaponStats = this.get(WeaponStatsComponent)!;
+    const gunSprite = weaponStats.spriteSource.toSprite();
+    gunSprite.scale = ex.vec(0.5, 0.5); // Scale down to 50% of original size
     this.graphics.add('gun', gunSprite);
     this.graphics.use('gun');
 
@@ -71,7 +74,6 @@ export class Weapon extends ex.Actor {
     this.collider.set(weaponCollider);
     
     // Create pickup label floating above the weapon
-    const weaponStats = this.get(WeaponStatsComponent)!;
     this.pickupLabel = new ex.Label({
       text: `Press [E] to pick up ${weaponStats.name}`,
       pos: ex.vec(0, -30), // Position above the weapon

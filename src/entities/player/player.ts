@@ -3,6 +3,7 @@ import {SpriteFactory} from '../../sprites/sprite-factory';
 import {GameUI} from '../../ui/game-ui';
 import {Bullet} from '../bullet';
 import {Weapon} from '../weapon';
+import { WeaponStatsComponent } from '../../components';
 import { playerGroup } from '../../lib/collision-groups';
 import { IPlayerState, PlayerStateType } from './states/player-state';
 import { IdleState } from './states/idle-state';
@@ -13,7 +14,6 @@ export class Player extends ex.Actor {
     private walkSpeed = 100; // pixels per second for walking
     private sprintSpeed = 150; // pixels per second for sprinting
     private isFacingRight = true;
-    private isSprinting = false;
     private idleAnimation!: ex.Animation;
     private walkAnimation!: ex.Animation;
     private sprintAnimation!: ex.Animation;
@@ -319,7 +319,7 @@ export class Player extends ex.Actor {
     equipWeapon(weapon: Weapon): void {
         // If already have a weapon, drop it first (weapon swap)
         if (this.equippedWeapon) {
-            console.log('Swapping weapons:', this.equippedWeapon.name, '->', weapon.name);
+            console.log('Swapping weapons:', this.equippedWeapon.weaponName, '->', weapon.weaponName);
             this.dropWeapon();
         } else {
             console.log('Weapon picked up!', weapon);
@@ -361,10 +361,12 @@ export class Player extends ex.Actor {
     private dropWeapon(): void {
         if (!this.equippedWeapon) return;
 
-        console.log('Dropping weapon:', this.equippedWeapon.name);
+        console.log('Dropping weapon:', this.equippedWeapon.weaponName);
 
-        // Re-add the original weapon entity to the scene at player's position
-        this.equippedWeapon.pos = this.pos.clone();
+        // Re-add the original weapon entity to the scene slightly offset from player
+        // Drop weapon in front of the player based on facing direction
+        const dropOffset = this.isFacingRight ? -40 : 40; // Drop in front based on facing direction
+        this.equippedWeapon.pos = this.pos.add(ex.vec(dropOffset, 10));
         this.scene?.add(this.equippedWeapon);
 
         // Remove the weapon visual from player
@@ -436,10 +438,35 @@ export class Player extends ex.Actor {
         // Normalize the direction to ensure consistent bullet speed
         direction = direction.normalize();
 
-        // Create bullet starting slightly away from player to avoid immediate collision
-        const bulletStartPos = playerCenter.add(direction.scale(20)); // Start 20 pixels away from player
-        const bullet = new Bullet(bulletStartPos, direction, this.equippedWeapon.damage);
-        this.scene?.add(bullet);
+        // Get weapon stats component for firing pattern
+        const weaponStats = this.equippedWeapon.get(WeaponStatsComponent);
+        if (!weaponStats) return;
+
+        // Create bullets based on weapon type
+        const bulletCount = weaponStats.bulletCount;
+        const spreadAngle = weaponStats.spreadAngle;
+
+        // Calculate starting angle offset for spread
+        const baseAngle = Math.atan2(direction.y, direction.x);
+        
+        for (let i = 0; i < bulletCount; i++) {
+            // Calculate spread offset for this bullet
+            let bulletAngle = baseAngle;
+            
+            if (bulletCount > 1) {
+                // Distribute bullets evenly across the spread angle
+                const spreadOffset = (i / (bulletCount - 1) - 0.5) * spreadAngle;
+                bulletAngle += spreadOffset;
+            }
+            
+            // Calculate bullet direction from angle
+            const bulletDirection = ex.vec(Math.cos(bulletAngle), Math.sin(bulletAngle));
+            
+            // Create bullet starting slightly away from player to avoid immediate collision
+            const bulletStartPos = playerCenter.add(bulletDirection.scale(20)); // Start 20 pixels away
+            const bullet = new Bullet(bulletStartPos, bulletDirection, weaponStats.damage);
+            this.scene?.add(bullet);
+        }
 
         // Update shooting state - use weapon's shoot method
         this.lastShotTime = currentTime;
@@ -450,7 +477,7 @@ export class Player extends ex.Actor {
             this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
         }
 
-        console.log(`Shot fired! Direction: (${direction.x.toFixed(2)}, ${direction.y.toFixed(2)}), Ammo remaining: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size}`);
+        console.log(`${weaponStats.name} fired ${bulletCount} bullet(s)! Ammo: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size} (consumed 1 ammo)`);
     }
 
     getEquippedWeapon(): Weapon | undefined {

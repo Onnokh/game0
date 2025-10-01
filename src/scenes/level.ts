@@ -5,8 +5,10 @@ import { Enemy } from "../entities/enemy";
 import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
-import {Weapon} from "../entities/weapon";
+import { Weapon } from "../entities/weapon";
+import { WeaponType } from "../components/weapon-stats-component";
 import { InteractionSystem } from "../systems/interaction-system";
+import { BulletSystem } from "../systems/bullet-system";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -16,6 +18,7 @@ export class MyLevel extends ex.Scene {
     override onInitialize(engine: ex.Engine): void {
         // Add ECS systems
         this.world.add(new InteractionSystem(this.world));
+        this.world.add(new BulletSystem(this.world));
         
         // Create player instance
         this.player = new Player();
@@ -160,13 +163,20 @@ export class MyLevel extends ex.Scene {
         // Add all trees to the scene
         oakTrees.forEach(tree => this.add(tree));
         
-        // Add weapon to the left of the player with custom stats
-        const weapon = new Weapon(250, 1104, "AK-47", 3, 12, 24); // damage: 3, firerate: 12, magazine: 24
-        const weapon2 = new Weapon(450, 1104, "Shotgun", 12, 4, 4); // damage: 3, firerate: 12, magazine: 24
-        this.add(weapon);
-        this.add(weapon2);
+        // Add weapons with types - showcase all weapon types with different sprites
+        const ak47 = new Weapon(200, 1104, WeaponType.AssaultRifle);
+        const shotgun = new Weapon(350, 1104, WeaponType.Shotgun);
+        const pistol = new Weapon(500, 1104, WeaponType.Pistol);
+        const smg = new Weapon(650, 1104, WeaponType.SMG);
+        this.add(ak47);
+        this.add(shotgun);
+        this.add(pistol);
+        this.add(smg);
         console.log(`Player position: (${this.player.pos.x}, ${this.player.pos.y})`);
-        console.log(`Weapon position: (${weapon.pos.x}, ${weapon.pos.y})`);
+        console.log(`AK-47 position: (${ak47.pos.x}, ${ak47.pos.y})`);
+        console.log(`Shotgun position: (${shotgun.pos.x}, ${shotgun.pos.y})`);
+        console.log(`Pistol position: (${pistol.pos.x}, ${pistol.pos.y})`);
+        console.log(`SMG position: (${smg.pos.x}, ${smg.pos.y})`);
         
         // Create enemy next to the player (to the right) - aligned to 16px grid
         const enemy = new Enemy(448, 704); // 48 pixels to the right of player (448 vs 400)

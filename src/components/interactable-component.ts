@@ -14,6 +14,10 @@ export class InteractableComponent extends ex.Component {
     super();
   }
 
+  override onAdd(owner: ex.Entity): void {
+    owner.tags.add('interactable');
+  }
+
   isPlayerNearby(): boolean {
     return this.playerNearby !== null;
   }
