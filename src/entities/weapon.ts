@@ -53,12 +53,16 @@ export class Weapon extends ex.Actor {
 
   // Weapon action methods (delegates to component)
   canShoot(): boolean {
-    return this.get(WeaponStatsComponent)?.canShoot() || false;
+    const weaponStats = this.get(WeaponStatsComponent);
+    if (!weaponStats) return false;
+    
+    // Can't shoot if weapon is loading or has no ammo
+    return !this.isLoading && weaponStats.canShoot();
   }
 
   shoot(): boolean {
     const weaponStats = this.get(WeaponStatsComponent);
-    if (!weaponStats) return false;
+    if (!weaponStats || this.isLoading) return false;
     
     const shot = weaponStats.shoot();
     

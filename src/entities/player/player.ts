@@ -364,11 +364,12 @@ export class Player extends ex.Actor {
             anchor: ex.vec(0.5, 0.5)
         });
         
-        // Clone the weapon sprite for the visual
-        const weaponSprite = weapon.graphics.current as ex.Sprite;
-        if (weaponSprite) {
-            const clonedSprite = weaponSprite.clone();
-            this.weaponVisual.graphics.use(clonedSprite);
+        // Get the weapon sprite from the weapon stats component
+        const weaponStats = weapon.get(WeaponStatsComponent);
+        if (weaponStats) {
+            const gunSprite = weaponStats.spriteSource.toSprite();
+            gunSprite.scale = ex.vec(0.5, 0.5); // Scale down to 50% of original size
+            this.weaponVisual.graphics.use(gunSprite);
         }
         
         // Add weapon visual as child of player
