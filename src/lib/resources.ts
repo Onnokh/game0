@@ -24,6 +24,12 @@ export const Resources = {
   Pistol: new ImageSource('./images/guns/Pistol-3.png'),
   SMG: new ImageSource('./images/guns/SMG-4.png'),
 
+  // Ammo sprites
+  Ammo1: new ImageSource('./images/guns/Amo1.png'),
+  Ammo2: new ImageSource('./images/guns/Amo2.png'),
+  Ammo3: new ImageSource('./images/guns/Amo3.png'),
+  Ammo4: new ImageSource('./images/guns/Amo4.png'),
+
   // Fonts
   DeterminationFont: new FontSource('./web/determination.ttf', 'Determination'),
 

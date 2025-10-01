@@ -78,8 +78,30 @@ export class Weapon extends ex.Actor {
     return shot;
   }
 
-  reload(): void {
-    this.get(WeaponStatsComponent)?.reload();
+  reload(player?: ex.Actor): void {
+    const weaponStats = this.get(WeaponStatsComponent);
+    if (!weaponStats) return;
+
+    // If we have a player reference, deduct ammo from player's reserves
+    if (player) {
+      const playerAny = player as any;
+      if (typeof playerAny.getAmmoComponent === 'function') {
+        const ammoComponent = playerAny.getAmmoComponent();
+        const ammoNeeded = weaponStats.magazineSize - weaponStats.currentAmmo;
+        const ammoRemoved = ammoComponent.removeAmmo(weaponStats.type, ammoNeeded, weaponStats.magazineSize);
+        
+        // Only reload if we have ammo to reload with
+        if (ammoRemoved > 0) {
+          weaponStats.currentAmmo += ammoRemoved;
+          console.log(`Reloaded ${weaponStats.name}: ${weaponStats.currentAmmo}/${weaponStats.magazineSize} (${ammoRemoved} ammo used)`);
+        } else {
+          console.log(`Cannot reload ${weaponStats.name}: No ammo available`);
+        }
+      }
+    } else {
+      // Fallback to old behavior (infinite ammo) if no player provided
+      weaponStats.reload();
+    }
   }
 
   // Start weapon loading process
@@ -93,7 +115,7 @@ export class Weapon extends ex.Actor {
   }
 
   // Check if loading is complete and finish if so
-  checkLoadingComplete(): boolean {
+  checkLoadingComplete(player?: ex.Actor): boolean {
     if (!this.isLoading) return false;
 
     const weaponStats = this.get(WeaponStatsComponent);
@@ -101,8 +123,8 @@ export class Weapon extends ex.Actor {
 
     const timeElapsed = Date.now() - this.lastLoadTime;
     if (timeElapsed >= weaponStats.loadingDuration) {
-      // Complete the reload
-      this.reload();
+      // Complete the reload with player reference for ammo deduction
+      this.reload(player);
       this.isLoading = false;
       console.log(`Weapon loading complete! Ammo: ${this.currentAmmo}/${this.magazine_size}`);
       return true;
@@ -135,7 +157,6 @@ export class Weapon extends ex.Actor {
     // Get the sprite from the weapon stats component
     const weaponStats = this.get(WeaponStatsComponent)!;
     const gunSprite = weaponStats.spriteSource.toSprite();
-    gunSprite.scale = ex.vec(0.5, 0.5); // Scale down to 50% of original size
     this.graphics.add('gun', gunSprite);
     this.graphics.use('gun');
 
@@ -154,7 +175,7 @@ export class Weapon extends ex.Actor {
       }),
       z: 1000 // High z-index to appear above other objects
     });
-    this.pickupLabel.graphics.visible = false; // Hidden by default
+    this.pickupLabel.graphics.isVisible = false; // Hidden by default
     this.addChild(this.pickupLabel);
     
     // Listen for interaction events from InteractionSystem
@@ -162,15 +183,15 @@ export class Weapon extends ex.Actor {
       const player = evt.player;
       const hasWeapon = player.getEquippedWeapon && player.getEquippedWeapon();
       if (hasWeapon) {
-        this.pickupLabel.text = `Press [E] to swap for ${weaponStats.name}`;
+        this.pickupLabel.text = `[E] to swap for ${weaponStats.name}`;
       } else {
-        this.pickupLabel.text = `Press [E] to pick up ${weaponStats.name}`;
+        this.pickupLabel.text = `[E] ${weaponStats.name}`;
       }
-      this.pickupLabel.graphics.visible = true;
+      this.pickupLabel.graphics.isVisible = true;
     });
 
     this.on('player-left', () => {
-      this.pickupLabel.graphics.visible = false;
+      this.pickupLabel.graphics.isVisible = false;
     });
     
     console.log(`Weapon initialized at: (${this.pos.x}, ${this.pos.y})`);

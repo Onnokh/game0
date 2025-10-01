@@ -7,6 +7,7 @@ import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
 import { Weapon } from "../entities/weapon";
 import { WeaponType } from "../components/weapon-stats-component";
+import { Ammo } from "../entities/ammo";
 import { InteractionSystem } from "../systems/interaction-system";
 import { BulletSystem } from "../systems/bullet-system";
 import { DamageNumberSystem } from "../systems/damage-number-system";
@@ -213,6 +214,16 @@ export class MyLevel extends ex.Scene {
         this.add(ak47);
         this.add(shotgun);
         this.add(smg);
+        
+        // Add ammo pickups near weapons
+        const ammoPickups = [
+            new Ammo(180, 1072, WeaponType.AssaultRifle, 60),  // Near AK-47
+            new Ammo(330, 1072, WeaponType.Shotgun, 24),       // Near Shotgun
+            new Ammo(630, 1072, WeaponType.SMG, 75),           // Near SMG
+            new Ammo(450, 1072, WeaponType.Pistol, 36),        // Pistol ammo in center
+            new Ammo(100, 1072, WeaponType.AssaultRifle, 90),  // Extra assault rifle ammo
+        ];
+        ammoPickups.forEach(ammo => this.add(ammo));
         
         // Rounds configuration placeholder
         const roundsConfig: LevelRoundsConfig = {

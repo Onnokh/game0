@@ -3,7 +3,7 @@ import {SpriteFactory} from '../../sprites/sprite-factory';
 import {GameUI} from '../../ui/game-ui';
 import {Bullet} from '../bullet';
 import {Weapon} from '../weapon';
-import { WeaponStatsComponent, HealthComponent } from '../../components';
+import { WeaponStatsComponent, HealthComponent, AmmoComponent } from '../../components';
 import { playerGroup } from '../../lib/collision-groups';
 import { IPlayerState, PlayerStateType } from './states/player-state';
 import { IdleState } from './states/idle-state';
@@ -47,6 +47,9 @@ export class Player extends ex.Actor {
 
     // Health properties
     private healthComponent: HealthComponent;
+    
+    // Ammo properties
+    private ammoComponent: AmmoComponent;
 
     // State Machine
     private currentState: IPlayerState;
@@ -65,6 +68,9 @@ export class Player extends ex.Actor {
 
         // Initialize health component
         this.healthComponent = new HealthComponent(100);
+        
+        // Initialize ammo component
+        this.ammoComponent = new AmmoComponent();
 
         // Initialize states
         this.states = new Map<PlayerStateType, IPlayerState>();
@@ -374,8 +380,13 @@ export class Player extends ex.Actor {
         
         // Update UI if available
         if (this.gameUI) {
+            const weaponStats = weapon.get(WeaponStatsComponent);
             this.gameUI.updateWeaponStatus(true, weapon.weaponName);
-            this.gameUI.updateAmmoCount(weapon.currentAmmo, weapon.magazine_size);
+            if (weaponStats) {
+                this.gameUI.updateAmmoDisplay(weapon.currentAmmo, weapon.magazine_size, this.ammoComponent.getAmmoCount(weaponStats.type));
+            } else {
+                this.gameUI.updateAmmoCount(weapon.currentAmmo, weapon.magazine_size);
+            }
         }
     }
 
@@ -503,7 +514,12 @@ export class Player extends ex.Actor {
 
         // Update UI
         if (this.gameUI) {
-            this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+            const weaponStats = this.equippedWeapon.get(WeaponStatsComponent);
+            if (weaponStats) {
+                this.gameUI.updateAmmoDisplay(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size, this.ammoComponent.getAmmoCount(weaponStats.type));
+            } else {
+                this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+            }
         }
 
         // Removed console.log for performance
@@ -516,6 +532,11 @@ export class Player extends ex.Actor {
     // Health methods
     getHealthComponent(): HealthComponent {
         return this.healthComponent;
+    }
+
+    // Ammo methods
+    getAmmoComponent(): AmmoComponent {
+        return this.ammoComponent;
     }
 
     takeDamage(amount: number): boolean {
@@ -545,11 +566,21 @@ export class Player extends ex.Actor {
     private reload(): void {
         if (!this.equippedWeapon) return;
 
+        // Check if we have ammo for this weapon type
+        const weaponStats = this.equippedWeapon.get(WeaponStatsComponent);
+        if (!weaponStats) return;
+
+        const availableAmmo = this.ammoComponent.getAmmoCount(weaponStats.type);
+        if (availableAmmo <= 0) {
+            console.log(`No ammo available for ${weaponStats.name}`);
+            return;
+        }
+
         // Start weapon loading through the weapon
         if (this.equippedWeapon.startLoading()) {
             // Update UI immediately to show loading started
             if (this.gameUI) {
-                this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+                this.gameUI.updateAmmoDisplay(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size, availableAmmo);
             }
         }
     }
@@ -557,11 +588,16 @@ export class Player extends ex.Actor {
     private checkWeaponLoadingComplete(): void {
         if (!this.equippedWeapon) return;
 
-        // Check if weapon loading is complete
-        if (this.equippedWeapon.checkLoadingComplete()) {
+        // Check if weapon loading is complete, passing player reference for ammo deduction
+        if (this.equippedWeapon.checkLoadingComplete(this)) {
             // Update UI when loading completes
             if (this.gameUI) {
-                this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+                const weaponStats = this.equippedWeapon.get(WeaponStatsComponent);
+                if (weaponStats) {
+                    this.gameUI.updateAmmoDisplay(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size, this.ammoComponent.getAmmoCount(weaponStats.type));
+                } else {
+                    this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
+                }
             }
         }
     }

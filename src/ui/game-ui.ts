@@ -4,7 +4,8 @@ import { HealthBar } from './health-bar';
 
 export class GameUI extends ex.ScreenElement {
   private weaponLabel!: ex.Label;
-  private ammoLabel!: ex.Label;
+  private magazineAmmoLabel!: ex.Label;
+  private totalAmmoLabel!: ex.Label;
   private dropHintLabel!: ex.Label;
   private roundLabel!: ex.Label;
   private enemiesLabel!: ex.Label;
@@ -23,7 +24,7 @@ export class GameUI extends ex.ScreenElement {
 
     // Create weapon status label
     this.weaponLabel = new ex.Label({
-      text: 'Weapon: None',
+      text: 'Unarmed',
       pos: ex.vec(engine.drawWidth - 16, engine.drawHeight - 32),
       z: 99999,
       font: Resources.DeterminationFont.toFont({
@@ -35,19 +36,33 @@ export class GameUI extends ex.ScreenElement {
     });
     this.addChild(this.weaponLabel);
 
-    // Create ammo count label
-    this.ammoLabel = new ex.Label({
-      text: 'Ammo: -/-',
+    // Create total ammo label (smaller and gray) - positioned to the right with fixed width
+    this.totalAmmoLabel = new ex.Label({
+      text: '|  -',
       pos: ex.vec(engine.drawWidth - 16, engine.drawHeight - 56),
       z: 99999,
       font: Resources.DeterminationFont.toFont({
         size: 14,
+        color: ex.Color.fromHex('#A0A0A0'), // Gray color
+        textAlign: ex.TextAlign.Right,
+        lineHeight: 32
+      })
+    });
+    this.addChild(this.totalAmmoLabel);
+
+    // Create magazine ammo label (big and white) - aligned to the right edge of total ammo
+    this.magazineAmmoLabel = new ex.Label({
+      text: '-',
+      pos: ex.vec(engine.drawWidth - 16 - 50, engine.drawHeight - 56), // 50px left of total ammo
+      z: 99999,
+      font: Resources.DeterminationFont.toFont({
+        size: 18,
         color: ex.Color.White,
         textAlign: ex.TextAlign.Right,
         lineHeight: 32
       })
     });
-    this.addChild(this.ammoLabel);
+    this.addChild(this.magazineAmmoLabel);
 
     // Create drop hint label
     this.dropHintLabel = new ex.Label({
@@ -110,7 +125,7 @@ export class GameUI extends ex.ScreenElement {
 
   updateWeaponStatus(hasWeapon: boolean, weaponName?: string): void {
     if (this.weaponLabel) {
-      this.weaponLabel.text = hasWeapon ? `Weapon: ${weaponName || 'Unknown'}` : 'Weapon: None';
+      this.weaponLabel.text = hasWeapon ? `${weaponName || 'Unknown'}` : 'Unarmed';
     }
     // Show drop hint only when player has a weapon
     if (this.dropHintLabel) {
@@ -119,8 +134,26 @@ export class GameUI extends ex.ScreenElement {
   }
 
   updateAmmoCount(current: number, max: number): void {
-    if (this.ammoLabel) {
-      this.ammoLabel.text = `Ammo: ${current}/${max}`;
+    if (this.magazineAmmoLabel) {
+      this.magazineAmmoLabel.text = `${current}`;
+    }
+    if (this.totalAmmoLabel) {
+      this.totalAmmoLabel.text = '|    -';
+    }
+  }
+
+  updateTotalAmmoCount(weaponType: string, totalAmmo: number): void {
+    if (this.totalAmmoLabel) {
+      this.totalAmmoLabel.text = `|  ${totalAmmo.toString().padStart(3, ' ')}`;
+    }
+  }
+
+  updateAmmoDisplay(current: number, max: number, totalAmmo: number): void {
+    if (this.magazineAmmoLabel) {
+      this.magazineAmmoLabel.text = `${current}`;
+    }
+    if (this.totalAmmoLabel) {
+      this.totalAmmoLabel.text = `|  ${totalAmmo.toString().padStart(3, ' ')}`;
     }
   }
 
