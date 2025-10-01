@@ -232,6 +232,9 @@ export class Player extends ex.Actor {
         if (this.equippedWeapon?.isCurrentlyLoading) {
             this.cooldownBarCanvas.flagDirty();
         }
+
+        // Update ammo UI to reflect any changes in ammo reserves
+        this.updateAmmoUI();
     }
 
     // State Machine Methods
@@ -422,6 +425,20 @@ export class Player extends ex.Actor {
 
     setGameUI(gameUI: GameUI): void {
         this.gameUI = gameUI;
+    }
+
+    // Update ammo UI display
+    private updateAmmoUI(): void {
+        if (!this.equippedWeapon || !this.gameUI) return;
+
+        const weaponStats = this.equippedWeapon.get(WeaponStatsComponent);
+        if (weaponStats) {
+            this.gameUI.updateAmmoDisplay(
+                this.equippedWeapon.currentAmmo, 
+                this.equippedWeapon.magazine_size, 
+                this.ammoComponent.getAmmoCount(weaponStats.type)
+            );
+        }
     }
 
     // Shooting methods
