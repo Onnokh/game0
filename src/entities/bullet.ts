@@ -87,7 +87,7 @@ export class Bullet extends ex.Actor {
         // Handle collision with enemies
         if (otherActor?.name === 'Enemy') {
             // Calculate critical hit (10% chance)
-            const isCritical = Math.random() < 0.4;
+            const isCritical = Math.random() < 0.05;
             const finalDamage = isCritical ? bulletComponent.damage * 2 : bulletComponent.damage;
             
             // Deal damage to enemy
