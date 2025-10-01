@@ -36,7 +36,7 @@ export class AttackState implements IEnemyState {
 
   private performAttack(enemy: Enemy, player: Player): void {
     // Use punch system if available
-    const punchSystem = (enemy as any).punchSystem;
+    const punchSystem = enemy.getPunchSystem();
     if (punchSystem) {
       // Calculate direction from enemy to player
       const direction = player.pos.sub(enemy.pos);

@@ -237,6 +237,10 @@ export class Enemy extends AIActor {
     this.punchSystem = punchSystem;
   }
 
+  getPunchSystem(): any {
+    return this.punchSystem;
+  }
+
   getLife(): number {
     return this.healthComponent.currentHealth;
   }
