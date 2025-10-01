@@ -112,9 +112,9 @@ export class Player extends ex.Actor {
         
         // Create dodge roll particle emitter
         this.dodgeRollParticles = new ex.ParticleEmitter({
-            pos: ex.vec(0, 0),
+            pos: ex.vec(0, 24),
             emitterType: ex.EmitterType.Circle,
-            radius: 5,
+            radius: 12,
             isEmitting: false,
             emitRate: 100, // particles per second
             particle: {
@@ -138,7 +138,7 @@ export class Player extends ex.Actor {
         
         // Create walking particle emitter (subtle foot dust)
         this.walkParticles = new ex.ParticleEmitter({
-            pos: ex.vec(0, 10), // At the feet
+            pos: ex.vec(0, 24), // At the feet
             emitterType: ex.EmitterType.Circle,
             radius: 3,
             isEmitting: false,
