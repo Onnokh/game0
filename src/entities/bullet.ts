@@ -32,14 +32,22 @@ export class Bullet extends ex.Actor {
     }
 
     override onInitialize(): void {
-        // Create simple bullet body (small elongated rectangle)
-        const bulletBody = new ex.Rectangle({
+        // Create bullet with dark body and yellow tip using Canvas
+        const bulletCanvas = new ex.Canvas({
             width: 8,
-            height: 3,
-            color: ex.Color.fromHex('#FFD700') // Gold/yellow color
+            height: 2,
+            draw: (ctx: CanvasRenderingContext2D) => {
+                // Yellow tip (small rectangle at the back - where it was fired from)
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(0, 0, 2, 2);
+                
+                // Dark bullet body (main rectangle at the front)
+                ctx.fillStyle = '#2C2C2C';
+                ctx.fillRect(2, 0, 6, 2);
+            }
         });
         
-        this.graphics.use(bulletBody);
+        this.graphics.use(bulletCanvas);
         
         // Create minimal trail particle emitter
         this.trailEmitter = new ex.ParticleEmitter({
