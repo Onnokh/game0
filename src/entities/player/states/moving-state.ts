@@ -53,12 +53,7 @@ export class MovingState implements IPlayerState {
     const desiredVel = normalizedMovement.scale(speed);
     player.vel = desiredVel.add(player.vel);
     
-    // Update facing direction
-    if (moveX < 0) {
-      player.setFacingRight(true);
-    } else if (moveX > 0) {
-      player.setFacingRight(false);
-    }
+    // Facing direction is now handled by mouse aiming, not movement
     
     // Set animation based on sprint state
     if (isSprinting) {

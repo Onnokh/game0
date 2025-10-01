@@ -210,17 +210,12 @@ export class Player extends ex.Actor {
         // Update current state (can blend recoil with movement)
         this.currentState.update(this, engine, delta);
         
-        // Apply horizontal flipping based on facing direction
-        this.graphics.flipHorizontal = this.isFacingRight;
+        // Apply horizontal flipping based on mouse direction instead of movement
+        this.updatePlayerFacing();
         
-        // Update weapon position and flip
+        // Update weapon to point at mouse
         if (this.weaponVisual) {
-            // Flip weapon to match character
-            this.weaponVisual.graphics.flipHorizontal = this.isFacingRight;
-            
-            // Position weapon relative to player (switch sides when flipped)
-            const offsetX = this.isFacingRight ? -8 : 8;
-            this.weaponVisual.pos = ex.vec(offsetX, 6);
+            this.updateWeaponAiming();
         }
 
         // Handle continuous shooting when mouse is held down
@@ -362,7 +357,7 @@ export class Player extends ex.Actor {
         this.weaponVisual = new ex.Actor({
             width: 32,
             height: 16,
-            pos: ex.vec(8, 0), // Offset relative to player center
+            pos: ex.vec(0, 0), // Offset relative to player center
             collisionType: ex.CollisionType.PreventCollision,
             anchor: ex.vec(0.5, 0.5)
         });
@@ -371,7 +366,7 @@ export class Player extends ex.Actor {
         const weaponStats = weapon.get(WeaponStatsComponent);
         if (weaponStats) {
             const gunSprite = weaponStats.spriteSource.toSprite();
-            gunSprite.scale = ex.vec(0.5, 0.5); // Scale down to 50% of original size
+            gunSprite.scale = ex.vec(0.75, 0.75); // Scale down to 50% of original size
             this.weaponVisual.graphics.use(gunSprite);
         }
         
@@ -458,10 +453,94 @@ export class Player extends ex.Actor {
     }
 
     private onPointerMove(event: ex.PointerEvent): void {
-        // Update target position while mouse is pressed for continuous shooting
-        if (this.isMousePressed) {
-            this.mouseTargetPos = event.worldPos;
+        // Always update target position for weapon aiming
+        this.mouseTargetPos = event.worldPos;
+    }
+
+    // Player facing methods
+    private updatePlayerFacing(): void {
+        const mousePos = this.mouseTargetPos || this.scene?.engine.input.pointers.primary.lastWorldPos;
+        
+        if (mousePos) {
+            const direction = this.calculateDirectionToMouse(mousePos);
+            
+            if (direction.magnitude > 10) {
+                // Face the mouse cursor
+                const angle = Math.atan2(direction.y, direction.x);
+                const isPointingLeft = angle > Math.PI / 2 || angle < -Math.PI / 2;
+                this.graphics.flipHorizontal = isPointingLeft;
+                this.isFacingRight = !isPointingLeft;
+            }
+        } else {
+            // Fallback to movement-based facing if no mouse input
+            this.graphics.flipHorizontal = this.isFacingRight;
         }
+    }
+
+    // Weapon aiming methods - separated concerns
+    private updateWeaponAiming(): void {
+        if (!this.weaponVisual) return;
+
+        const mousePos = this.mouseTargetPos || this.scene?.engine.input.pointers.primary.lastWorldPos;
+        
+        if (mousePos) {
+            const direction = this.calculateDirectionToMouse(mousePos);
+            
+            if (direction.magnitude > 10) {
+                this.positionWeaponAtMouse(direction);
+                this.rotateWeaponToMouse(direction);
+                this.flipWeaponForDirection(direction);
+            }
+        } else {
+            this.resetWeaponToDefault();
+        }
+    }
+
+    private calculateDirectionToMouse(mousePos: ex.Vector): ex.Vector {
+        const playerCenter = this.pos;
+        return mousePos.sub(playerCenter);
+    }
+
+    private positionWeaponAtMouse(direction: ex.Vector): void {
+        if (!this.weaponVisual) return;
+
+        const angle = Math.atan2(direction.y, direction.x);
+        const weaponOffset = 24; // Distance from player center
+        const offsetX = Math.cos(angle) * weaponOffset;
+        const offsetY = Math.sin(angle) * weaponOffset;
+        
+        this.weaponVisual.pos = ex.vec(offsetX, offsetY);
+    }
+
+    private rotateWeaponToMouse(direction: ex.Vector): void {
+        if (!this.weaponVisual) return;
+
+        const angle = Math.atan2(direction.y, direction.x);
+        // Simply rotate to the angle - no compensation needed
+        this.weaponVisual.rotation = angle;
+    }
+
+    private flipWeaponForDirection(direction: ex.Vector): void {
+        if (!this.weaponVisual) return;
+
+        const angle = Math.atan2(direction.y, direction.x);
+        // Check if the weapon is pointing to the left side
+        const isPointingLeft = angle > Math.PI / 2 || angle < -Math.PI / 2;
+        
+        // Use vertical flip instead of horizontal to keep barrel pointing away from player
+        this.weaponVisual.graphics.flipVertical = isPointingLeft;
+        this.weaponVisual.graphics.flipHorizontal = false;
+    }
+
+    private resetWeaponToDefault(): void {
+        if (!this.weaponVisual) return;
+
+        // Fallback to original behavior if no mouse position
+        this.weaponVisual.graphics.flipVertical = false;
+        this.weaponVisual.graphics.flipHorizontal = false;
+        const offsetX = this.isFacingRight ? -8 : 8;
+        this.weaponVisual.pos = ex.vec(offsetX, 6);
+        this.weaponVisual.rotation = 0;
     }
 
     private shoot(targetPos: ex.Vector): void {
