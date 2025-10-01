@@ -6,7 +6,7 @@ import { GameUI } from "../ui/game-ui";
 import { Resources } from "../lib/resources";
 import { DebugManager } from "../lib/debug-manager";
 import {Weapon} from "../entities/weapon";
-import { environmentCollisionGroup } from "../lib/collision-groups";
+import { InteractionSystem } from "../systems/interaction-system";
 
 export class MyLevel extends ex.Scene {
     private player!: Player;
@@ -14,6 +14,9 @@ export class MyLevel extends ex.Scene {
     private debugManager!: DebugManager;
 
     override onInitialize(engine: ex.Engine): void {
+        // Add ECS systems
+        this.world.add(new InteractionSystem(this.world));
+        
         // Create player instance
         this.player = new Player();
         this.add(this.player);
@@ -174,7 +177,7 @@ export class MyLevel extends ex.Scene {
     override onPreLoad(loader: ex.DefaultLoader): void {
         // Add any scene specific resources to load
     }
-a
+
     override onActivate(context: ex.SceneActivationContext<unknown>): void {
         // Called when Excalibur transitions to this scene
         // Only 1 scene is active at a time

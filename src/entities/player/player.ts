@@ -25,7 +25,6 @@ export class Player extends ex.Actor {
     
     // Shooting mechanics
     private lastShotTime = 0;
-    private currentAmmo = 0;
     private equippedWeapon?: Weapon;
     private weaponVisual?: ex.Actor;
     private isMousePressed = false;
@@ -168,8 +167,10 @@ export class Player extends ex.Actor {
         }
 
         // Handle reload (R key)
-        if (input.wasPressed(ex.Keys.KeyR) && this.equippedWeapon && this.currentAmmo < this.equippedWeapon.magazine_size) {
-            this.reload();
+        if (input.wasPressed(ex.Keys.KeyR) && this.equippedWeapon) {
+            if (this.equippedWeapon.currentAmmo < this.equippedWeapon.magazine_size) {
+                this.reload();
+            }
         }
 
         // Handle weapon drop (Q key)
@@ -194,7 +195,7 @@ export class Player extends ex.Actor {
         }
 
         // Handle continuous shooting when mouse is held down
-        if (this.isMousePressed && this.mouseTargetPos && this.equippedWeapon && this.currentAmmo > 0) {
+        if (this.isMousePressed && this.mouseTargetPos && this.equippedWeapon && this.equippedWeapon.canShoot()) {
             this.shoot(this.mouseTargetPos);
         }
         
@@ -324,7 +325,7 @@ export class Player extends ex.Actor {
             console.log('Weapon picked up!', weapon);
         }
 
-        // Store reference to the weapon data
+        // Store reference to the weapon entity
         this.equippedWeapon = weapon;
 
         // Create a visual representation of the weapon
@@ -346,16 +347,13 @@ export class Player extends ex.Actor {
         // Add weapon visual as child of player
         this.addChild(this.weaponVisual);
         
-        // Remove the original weapon from scene
-        weapon.kill();
-        
-        // Initialize ammo
-        this.currentAmmo = weapon.magazine_size;
+        // Remove the original weapon from scene (but don't kill it)
+        this.scene?.remove(weapon);
         
         // Update UI if available
         if (this.gameUI) {
-            this.gameUI.updateWeaponStatus(true, weapon.name);
-            this.gameUI.updateAmmoCount(this.currentAmmo, weapon.magazine_size);
+            this.gameUI.updateWeaponStatus(true, weapon.weaponName);
+            this.gameUI.updateAmmoCount(weapon.currentAmmo, weapon.magazine_size);
         }
     }
 
@@ -365,18 +363,9 @@ export class Player extends ex.Actor {
 
         console.log('Dropping weapon:', this.equippedWeapon.name);
 
-        // Drop weapon at player's feet (same position)
-        const droppedWeapon = new Weapon(
-            this.pos.x,
-            this.pos.y,
-            this.equippedWeapon.name,
-            this.equippedWeapon.damage,
-            this.equippedWeapon.firerate,
-            this.equippedWeapon.magazine_size
-        );
-
-        // Add the dropped weapon to the scene
-        this.scene?.add(droppedWeapon);
+        // Re-add the original weapon entity to the scene at player's position
+        this.equippedWeapon.pos = this.pos.clone();
+        this.scene?.add(this.equippedWeapon);
 
         // Remove the weapon visual from player
         if (this.weaponVisual) {
@@ -386,9 +375,6 @@ export class Player extends ex.Actor {
 
         // Clear equipped weapon reference
         this.equippedWeapon = undefined;
-
-        // Reset ammo
-        this.currentAmmo = 0;
 
         // Update UI
         if (this.gameUI) {
@@ -406,7 +392,7 @@ export class Player extends ex.Actor {
     // Shooting methods
     private onPointerDown(event: ex.PointerEvent): void {
         // Only start shooting if we have a weapon equipped and ammo
-        if (this.equippedWeapon && this.currentAmmo > 0) {
+        if (this.equippedWeapon && this.equippedWeapon.canShoot()) {
             this.isMousePressed = true;
             this.mouseTargetPos = event.worldPos;
             console.log(`Mouse pressed - Screen: (${event.screenPos.x}, ${event.screenPos.y}), World: (${event.worldPos.x}, ${event.worldPos.y})`);
@@ -455,32 +441,16 @@ export class Player extends ex.Actor {
         const bullet = new Bullet(bulletStartPos, direction, this.equippedWeapon.damage);
         this.scene?.add(bullet);
 
-        // Update shooting state
+        // Update shooting state - use weapon's shoot method
         this.lastShotTime = currentTime;
-        this.currentAmmo--;
+        this.equippedWeapon.shoot();
 
         // Update UI
         if (this.gameUI) {
-            this.gameUI.updateAmmoCount(this.currentAmmo, this.equippedWeapon.magazine_size);
+            this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
         }
 
-        console.log(`Shot fired! Direction: (${direction.x.toFixed(2)}, ${direction.y.toFixed(2)}), Ammo remaining: ${this.currentAmmo}/${this.equippedWeapon.magazine_size}`);
-    }
-
-    getCurrentAmmo(): number {
-        return this.currentAmmo;
-    }
-
-    getMaxAmmo(): number {
-        return this.equippedWeapon?.magazine_size || 0;
-    }
-
-    getWeaponDamage(): number {
-        return this.equippedWeapon?.damage || 0;
-    }
-
-    getWeaponFirerate(): number {
-        return this.equippedWeapon?.firerate || 0;
+        console.log(`Shot fired! Direction: (${direction.x.toFixed(2)}, ${direction.y.toFixed(2)}), Ammo remaining: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size}`);
     }
 
     getEquippedWeapon(): Weapon | undefined {
@@ -490,15 +460,15 @@ export class Player extends ex.Actor {
     private reload(): void {
         if (!this.equippedWeapon) return;
 
-        // Reload to full magazine
-        this.currentAmmo = this.equippedWeapon.magazine_size;
+        // Reload to full magazine using weapon method
+        this.equippedWeapon.reload();
         
         // Update UI
         if (this.gameUI) {
-            this.gameUI.updateAmmoCount(this.currentAmmo, this.equippedWeapon.magazine_size);
+            this.gameUI.updateAmmoCount(this.equippedWeapon.currentAmmo, this.equippedWeapon.magazine_size);
         }
         
-        console.log(`Reloaded! Ammo: ${this.currentAmmo}/${this.equippedWeapon.magazine_size}`);
+        console.log(`Reloaded! Ammo: ${this.equippedWeapon.currentAmmo}/${this.equippedWeapon.magazine_size}`);
     }
 
     // Cooldown bar drawing
