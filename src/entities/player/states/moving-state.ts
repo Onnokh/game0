@@ -46,8 +46,7 @@ export class MovingState implements IPlayerState {
     
     // Check for sprint
     const isSprinting = input.isHeld(ex.Keys.ShiftLeft);
-    player.setSprinting(isSprinting);
-    
+
     // Normalize diagonal movement
     const normalizedMovement = ex.vec(moveX, moveY).normalize();
     const speed = isSprinting ? player.getSprintSpeed() : player.getWalkSpeed();

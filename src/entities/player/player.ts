@@ -268,10 +268,6 @@ export class Player extends ex.Actor {
         this.isFacingRight = facingRight;
     }
 
-    setSprinting(sprinting: boolean): void {
-        this.isSprinting = sprinting;
-    }
-
     getWalkSpeed(): number {
         return this.walkSpeed;
     }
