@@ -96,6 +96,17 @@ export function findPath(
   const gridWidth = maxX - minX + 1;
   const gridHeight = maxY - minY + 1;
   
+  // If start and end are the same, no pathfinding needed
+  if (start.equals(end)) {
+    return [];
+  }
+  
+  // Validate grid size
+  if (gridWidth <= 0 || gridHeight <= 0) {
+    console.warn('Pathfinding: Invalid grid size', { gridWidth, gridHeight, start, end });
+    return [];
+  }
+  
   // Create the collision grid
   const gridTileMap = createCollisionGrid(engine, tileSize, gridWidth, gridHeight, minX, minY, excludeActor);
   
@@ -116,24 +127,26 @@ export function findPath(
   const startNode = astar.getNodeByCoord(adjustedStart.x, adjustedStart.y);
   const endNode = astar.getNodeByCoord(adjustedEnd.x, adjustedEnd.y);
   
-  // Validate that both nodes exist and are within bounds
+  // Validate that both nodes exist
   if (!startNode || !endNode) {
-    console.warn('Pathfinding failed: Invalid start or end coordinates', {
-      start: start,
-      end: end,
-      adjustedStart: adjustedStart,
-      adjustedEnd: adjustedEnd,
-      gridWidth: gridWidth,
-      gridHeight: gridHeight
+    console.warn('Pathfinding: Invalid nodes', {
+      adjustedStart,
+      adjustedEnd,
+      gridWidth,
+      gridHeight,
+      startNode: !!startNode,
+      endNode: !!endNode
     });
     return [];
   }
   
   // Find path (with diagonal movement)
-  const pathNodes: aStarNode[] = astar.astar(startNode, endNode, true);
-  
-  // Convert back to world positions
-  return pathNodes.map(node => 
-    gridToWorld(ex.vec(node.x + minX, node.y + minY), tileSize)
-  );
+  try {
+    const pathNodes: aStarNode[] = astar.astar(startNode, endNode, true);
+    return pathNodes.map(node => 
+      gridToWorld(ex.vec(node.x + minX, node.y + minY), tileSize)
+    );
+  } catch (error) {
+    return [];
+  }
 }

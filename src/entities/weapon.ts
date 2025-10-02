@@ -60,18 +60,43 @@ export class Weapon extends ex.Actor {
     return !this.isLoading && weaponStats.canShoot();
   }
 
-  shoot(): boolean {
+  shoot(player?: ex.Actor): boolean {
     const weaponStats = this.get(WeaponStatsComponent);
     if (!weaponStats || this.isLoading) return false;
     
     const shot = weaponStats.shoot();
     
-    // Always auto-reload when ammo hits 0
+    // Auto-reload when ammo hits 0, but only if player has ammo available
     if (shot && weaponStats.currentAmmo === 0 && !this.isLoading) {
-      this.startLoading();
-      // Notify player about auto-reload start
-      if (this.onAutoReloadStart) {
-        this.onAutoReloadStart();
+      // Check if player has ammo available before starting auto-reload
+      if (player) {
+        const playerAny = player as any;
+        if (typeof playerAny.getAmmoComponent === 'function') {
+          const ammoComponent = playerAny.getAmmoComponent();
+          const availableAmmo = ammoComponent.getAmmoCount(weaponStats.type);
+          
+          if (availableAmmo > 0) {
+            this.startLoading();
+            // Notify player about auto-reload start
+            if (this.onAutoReloadStart) {
+              this.onAutoReloadStart();
+            }
+          } else {
+            console.log(`Cannot auto-reload ${weaponStats.name}: No ammo available`);
+          }
+        } else {
+          // Fallback: start loading if we can't check ammo (for backwards compatibility)
+          this.startLoading();
+          if (this.onAutoReloadStart) {
+            this.onAutoReloadStart();
+          }
+        }
+      } else {
+        // Fallback: start loading if no player provided (for backwards compatibility)
+        this.startLoading();
+        if (this.onAutoReloadStart) {
+          this.onAutoReloadStart();
+        }
       }
     }
     

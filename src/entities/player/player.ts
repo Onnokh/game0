@@ -661,7 +661,7 @@ export class Player extends ex.Actor {
 
         // Update shooting state - use weapon's shoot method
         this.lastShotTime = currentTime;
-        this.equippedWeapon.shoot();
+        this.equippedWeapon.shoot(this);
 
         // Update UI
         if (this.gameUI) {

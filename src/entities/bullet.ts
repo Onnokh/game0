@@ -6,6 +6,7 @@ import { DamageNumberSystem } from '../systems/damage-number-system';
 export class Bullet extends ex.Actor {
     private speed = 600; // pixels per second
     private trailEmitter!: ex.ParticleEmitter;
+    private shadow!: ex.Actor;
 
     constructor(startPos: ex.Vector, direction: ex.Vector, damage: number = 25) {
         super({
@@ -48,6 +49,37 @@ export class Bullet extends ex.Actor {
         });
         
         this.graphics.use(bulletCanvas);
+        
+        // Create shadow for the bullet
+        const shadowCanvas = new ex.Canvas({
+            width: 8,
+            height: 3,
+            draw: (ctx: CanvasRenderingContext2D) => {
+                // Simple dark shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillRect(0, 0, 8, 3);
+            }
+        });
+        
+        // Create shadow actor positioned below the bullet in world space
+        this.shadow = new ex.Actor({
+            name: 'BulletShadow',
+            pos: ex.vec(this.pos.x, this.pos.y + 8), // Position in world space
+            anchor: ex.vec(0.5, 0.5),
+            z: this.z - 1
+        });
+        
+        this.shadow.graphics.use(shadowCanvas);
+        this.scene?.add(this.shadow); // Add to scene instead of as child
+        
+        // Update shadow position and rotation to match the bullet
+        this.on('preupdate', () => {
+            // Always place shadow 8 pixels down in world space (positive Y direction)
+            // regardless of bullet rotation
+            this.shadow.pos = ex.vec(this.pos.x, this.pos.y + 8);
+            // Make shadow rotate with the bullet
+            this.shadow.rotation = this.rotation;
+        });
         
         // Create minimal trail particle emitter
         this.trailEmitter = new ex.ParticleEmitter({
@@ -129,6 +161,11 @@ export class Bullet extends ex.Actor {
         if (this.trailEmitter) {
             this.trailEmitter.isEmitting = false;
             this.trailEmitter.kill(); // Properly destroy the emitter to prevent memory leaks
+        }
+        
+        // Clean up shadow
+        if (this.shadow) {
+            this.shadow.kill();
         }
     }
 }
