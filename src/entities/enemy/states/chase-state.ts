@@ -44,7 +44,7 @@ export class ChaseState implements IEnemyState {
       }
 
       // Follow the current path
-      enemy.followPath();
+      enemy.followPath(enemy.getMoveSpeed());
     }
   }
 

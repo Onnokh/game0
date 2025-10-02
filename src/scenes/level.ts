@@ -8,10 +8,17 @@ import { DebugManager } from "../lib/debug-manager";
 import { Weapon } from "../entities/weapon";
 import { WeaponType } from "../components/weapon-stats-component";
 import { Ammo } from "../entities/ammo";
+import { ModifierBox } from "../entities/modifier-box";
+import { BulletModifierType } from "../components/bullet-modifier-component";
 import { InteractionSystem } from "../systems/interaction-system";
 import { BulletSystem } from "../systems/bullet-system";
 import { DamageNumberSystem } from "../systems/damage-number-system";
 import { HealthSystem } from "../systems/health-system";
+import { ModifierSystem } from "../systems/modifier-system";
+import { ModifierPickupSystem } from "../systems/modifier-pickup-system";
+import { StatusEffectSystem } from "../systems/status-effect-system";
+import { StatusEffectVisualSystem } from "../systems/status-effect-visual-system";
+import { EnemyDeathCleanupSystem } from "../systems/enemy-death-cleanup-system";
 import { PunchSystem } from "../systems/punch-system";
 import { LevelRoundsConfig, RoundManager } from "../lib/rounds";
 
@@ -25,6 +32,11 @@ export class MyLevel extends ex.Scene {
         // Add ECS systems
         this.world.add(new InteractionSystem(this.world));
         this.world.add(new BulletSystem(this.world));
+        this.world.add(new ModifierSystem(this.world));
+        this.world.add(new ModifierPickupSystem(this.world));
+        this.world.add(new StatusEffectSystem(this.world));
+        this.world.add(new StatusEffectVisualSystem(this.world));
+        this.world.add(new EnemyDeathCleanupSystem(this.world));
         this.world.add(new DamageNumberSystem(this.world));
         this.world.add(new HealthSystem(this.world));
         const punchSystem = new PunchSystem(this.world);
@@ -230,6 +242,15 @@ export class MyLevel extends ex.Scene {
             new Ammo(100, 1072, WeaponType.AssaultRifle, 90),  // Extra assault rifle ammo
         ];
         ammoPickups.forEach(ammo => this.add(ammo));
+        
+        // Add modifier boxes scattered around the map - one of each type
+        const modifierBoxes = [
+            new ModifierBox(ex.vec(180, 1000), BulletModifierType.FIRE),  
+            new ModifierBox(ex.vec(400, 1000), BulletModifierType.LIGHTNING),   
+            new ModifierBox(ex.vec(600, 1000), BulletModifierType.ICE),   
+            new ModifierBox(ex.vec(300, 1000), BulletModifierType.POISON),  
+        ];
+        modifierBoxes.forEach(box => this.add(box));
         
         // Rounds configuration placeholder
         const roundsConfig: LevelRoundsConfig = {

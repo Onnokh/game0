@@ -225,6 +225,10 @@ export class Enemy extends AIActor {
     return this.moveSpeed;
   }
 
+  setMoveSpeed(speed: number): void {
+    this.moveSpeed = speed;
+  }
+
   getHealthComponent(): HealthComponent {
     return this.healthComponent;
   }

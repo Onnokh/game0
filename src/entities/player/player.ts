@@ -3,7 +3,7 @@ import {SpriteFactory} from '../../sprites/sprite-factory';
 import {GameUI} from '../../ui/game-ui';
 import {Bullet} from '../bullet';
 import {Weapon} from '../weapon';
-import { WeaponStatsComponent, HealthComponent, AmmoComponent, PunchComponent } from '../../components';
+import { WeaponStatsComponent, HealthComponent, AmmoComponent, PunchComponent, BulletModifierType } from '../../components';
 import { PunchSystem } from '../../systems/punch-system';
 import { playerGroup } from '../../lib/collision-groups';
 import { IPlayerState, PlayerStateType } from './states/player-state';
@@ -648,7 +648,9 @@ export class Player extends ex.Actor {
             
             // Create bullet starting slightly away from player to avoid immediate collision
             const bulletStartPos = playerCenter.add(bulletDirection.scale(20)); // Start 20 pixels away
-            const bullet = new Bullet(bulletStartPos, bulletDirection, weaponStats.damage);
+            // Create bullet with potential modifiers
+            const modifiers = this.getBulletModifiers();
+            const bullet = new Bullet(bulletStartPos, bulletDirection, weaponStats.damage, modifiers);
             this.scene?.add(bullet);
         }
 
@@ -852,6 +854,29 @@ export class Player extends ex.Actor {
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 1;
         ctx.strokeRect(1, 1, barWidth, barHeight);
+    }
+
+    /**
+     * Get bullet modifiers based on picked up modifier boxes
+     */
+    private getBulletModifiers(): BulletModifierType[] {
+        const modifiers: BulletModifierType[] = [];
+        
+        // Check if player has a picked up modifier
+        const currentModifier = (this as any).currentBulletModifier as BulletModifierType;
+        if (currentModifier) {
+            modifiers.push(currentModifier);
+        }
+        
+        return modifiers;
+    }
+
+    /**
+     * Handle modifier pickup event
+     */
+    onModifierPickup(modifierType: BulletModifierType): void {
+        (this as any).currentBulletModifier = modifierType;
+        console.log(`Player picked up modifier: ${modifierType}`);
     }
 }
 

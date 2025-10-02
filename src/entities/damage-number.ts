@@ -156,4 +156,93 @@ export class DamageNumber extends ex.Actor {
         
         return new DamageNumber(position, damage, color, isCritical);
     }
+
+    // Create damage number with modifier icon
+    static createModifierDamageNumber(position: ex.Vector, damage: number, modifierType: string, modifierIcon: string): DamageNumber {
+        let color: ex.Color;
+        
+        // Color based on modifier type
+        switch (modifierType) {
+            case 'fire':
+                color = ex.Color.fromHex('#FF4500');
+                break;
+            case 'lightning':
+                color = ex.Color.fromHex('#00FFFF');
+                break;
+            case 'ice':
+                color = ex.Color.fromHex('#87CEEB');
+                break;
+            case 'poison':
+                color = ex.Color.fromHex('#32CD32'); 
+                break;
+            default:
+                color = ex.Color.White;
+        }
+        
+        const damageNumber = new DamageNumber(position, damage, color, false);
+        damageNumber.addModifierIcon(modifierIcon);
+        return damageNumber;
+    }
+
+    // Add modifier icon to existing damage number
+    addModifierIcon(icon: string): void {
+        const fontSize = this.isCritical ? 18 : 14;
+        const iconSize = fontSize + 4;
+        
+        // Create icon text
+        const iconText = new ex.Text({
+            text: icon,
+            font: Resources.DeterminationFont.toFont({
+                size: iconSize,
+                color: this.damageColor,
+                textAlign: ex.TextAlign.Center,
+                baseAlign: ex.BaseAlign.Middle
+            })
+        });
+        
+        // Create shadow for icon
+        const iconShadow = new ex.Text({
+            text: icon,
+            font: Resources.DeterminationFont.toFont({
+                size: iconSize,
+                color: ex.Color.Black,
+                textAlign: ex.TextAlign.Center,
+                baseAlign: ex.BaseAlign.Middle
+            })
+        });
+        
+        // Update the graphics group to include the icon
+        const damageText = Math.round(this.damage).toString();
+        const shadowText = new ex.Text({
+            text: damageText,
+            font: Resources.DeterminationFont.toFont({
+                size: fontSize,
+                color: ex.Color.Black,
+                textAlign: ex.TextAlign.Center,
+                baseAlign: ex.BaseAlign.Middle
+            })
+        });
+        
+        const mainText = new ex.Text({
+            text: damageText,
+            font: Resources.DeterminationFont.toFont({
+                size: fontSize,
+                color: this.damageColor,
+                textAlign: ex.TextAlign.Center,
+                baseAlign: ex.BaseAlign.Middle
+            })
+        });
+        
+        // Create a graphics group with icon and damage text
+        const textGroup = new ex.GraphicsGroup({
+            members: [
+                { graphic: iconShadow, offset: ex.vec(2, -8) },
+                { graphic: iconText, offset: ex.vec(0, -10) }, 
+                { graphic: shadowText, offset: ex.vec(2, 2) },
+                { graphic: mainText, offset: ex.vec(0, 0) }
+            ]
+        });
+
+        this.graphics.use(textGroup);
+    }
 }
